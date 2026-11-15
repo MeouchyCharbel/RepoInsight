@@ -17,7 +17,7 @@ export const DEMO = {
 
 const day = (d: number) => new Date(Date.UTC(2026, 9, d, 12));
 
-export async function seedDemo(db: Db, password: string): Promise<void> {
+export async function seedDemo(db: Db, password: string, opts: { issues?: boolean } = {}): Promise<void> {
   const hash = await hashPassword(password);
   const users = db.collection<UserDoc>('users');
   for (const name of DEMO.users) {
@@ -50,7 +50,7 @@ export async function seedDemo(db: Db, password: string): Promise<void> {
   for (const [principal, role] of grants) {
     await db.collection<PermissionDoc>('permissions').updateOne(
       { repo_id: DEMO.privateRepo, principal_id: principal },
-      { $set: { role, source: 'direct', acl_epoch: 1, updated_at: new Date() } },
+      { $set: { role, source: 'direct', acl_epoch: 1, seq: 0, updated_at: new Date() } },
       { upsert: true },
     );
   }
@@ -62,6 +62,8 @@ export async function seedDemo(db: Db, password: string): Promise<void> {
     { repo_id: DEMO.privateRepo, number: 3, title: 'PRIVATE: rotate payment gateway credentials', body: 'Synthetic private issue used to test that private data never leaks.', state: 'open', labels: ['security'], author_id: 'u_alice', updated_at: day(11) },
     { repo_id: DEMO.privateRepo, number: 4, title: 'PRIVATE: invoice rounding bug', body: 'Synthetic private issue.', state: 'closed', labels: ['bug'], author_id: 'u_bob', updated_at: day(9) },
   ];
+  // Minimal issues for fast unit tests; `npm run seed` uses the full Git scenario instead.
+  if (opts.issues === false) return;
   for (const i of issues) {
     await db.collection<IssueDoc>('issues').updateOne(
       { repo_id: i.repo_id, number: i.number },

@@ -4,7 +4,7 @@ Prototype of the *Repository, Issue and Documentation Assistant* described in th
 architecture report. MongoDB is the authoritative store; OpenSearch and other views are derived
 from it through a transactional outbox and Kafka.
 
-> Status: **Phase 1 (core backend, sign-in, access control)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
+> Status: **Phase 2 (ingestion, revisions, outbox)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
 > what is tested, and what remains production-design only.
 
 ## Stack
@@ -56,7 +56,19 @@ npm run dev:api
 
 Demo users `alice` (admin of the private repo), `bob` (reader), `carol` (no private access) and
 `ops` (platform admin: manages access, no implicit read) all use `DEMO_USER_PASSWORD` from `.env`.
-All demo data is synthetic.
+All demo data is synthetic. `npm run seed` builds a real Git repository under
+`data/fixtures/acme-tls-proxy` covering a merge commit, a squash merge, a rebase merge, a verified
+backport (cherry-pick trailer) and an edited backport, then ingests it with issues, PRs, reviews,
+releases and documentation revisions (the TLS security-regression story from the report).
+
+To import a public GitHub repository (optional; add a read-only `GITHUB_TOKEN` to `.env` for more
+than 60 requests per hour):
+
+```bash
+npm run import -- sindresorhus/is-docker
+```
+
+Running it again performs an incremental update.
 
 ## Everyday commands
 
@@ -85,6 +97,14 @@ All routes except `/health` and `/auth/login` require a session cookie.
 | `POST /repos/:repoId/permissions` `{username, role}` | Grant access |
 | `DELETE /repos/:repoId/permissions/:username` | Revoke access (effective before the response) |
 | `PATCH /repos/:repoId/visibility` `{visibility}` | Public or private |
+
+Platform admins only:
+
+| Method and path | Purpose |
+|---|---|
+| `POST /imports` `{repo: "owner/name"}` | Start an initial or incremental import (202 + job id) |
+| `GET /imports/:jobId` | Job status with per-step progress and errors |
+| `POST /admin/deliveries` `{provider, delivery_id, event}` | Event intake (issue opened/closed/edited, comment added, document changed, release published, access granted/revoked) |
 
 A private repository the caller cannot read returns the same 404 as one that does not exist.
 If access cannot be verified, private and public data alike are refused with 503.

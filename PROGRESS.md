@@ -18,7 +18,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 |---|---|
 | 0 Repo + infrastructure | done (2026-11-15) |
 | 1 Core backend, auth, ACL | done (2026-11-15) |
-| 2 Ingestion | pending |
+| 2 Ingestion | done (2026-11-15) |
 | 3 Streaming / projections | pending |
 | 4 Release tracing | pending |
 | 5 Search, citations, guidance, eval | pending |
@@ -50,7 +50,41 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
 - `npm audit`: 0 vulnerabilities (zod 4.6.7, vitest 5.1.0).
 - Tests: 29 passing (auth 10, ACL 14, schema 4 + fail-closed 1) - `npm test`, 2026-11-15.
 
+## Phase 2 summary (2026-11-15)
+- `ingest/store.ts`: canonical writes, each one majority transaction with its outbox event. Ordering
+  by compare-and-set on the provider `updated_at` + content digest: applied / duplicate / stale
+  (older revision kept as history only). Event ids `repo:entity:revision`, keys `repo:type:id`.
+- Documents: revision n = n-th commit touching the file (real Git history); latest pointer moves
+  only forward; content-addressed `blobs`; chunks per report 4.2 with exact line ranges,
+  deterministic ids, `config_keys`, `is_latest` and `guidance_status` (old revisions historical).
+- Issues (+ `issue_revisions` history), PRs (`merged_sha` only when merged; head commits kept for
+  context), comments, reviews, review comments, releases (target from the Git tag; notes stored as
+  versioned documents), branches, contributors, commits (blobless clone; generation numbers;
+  cherry-pick trailers).
+- GitHub client: Link pagination (api.github.com only), rate-limit wait or pause, Retry-After,
+  bounded backoff with jitter, no retry on 4xx. Token never logged or stored.
+- Import jobs: per-step progress/errors, dependent steps skipped, `since` cursor with 5-min skew,
+  public repositories only. `POST /imports`, `GET /imports/:id`, `npm run import -- owner/name`.
+- Durable inbox for the six required events (+ edits): dedupe on (provider, delivery_id),
+  record-then-apply, `reprocessPending()` for crash recovery, platform-admin intake route.
+- Permissions: revocations are tombstones with `seq`; an older grant arriving after a newer revoke is
+  ignored and audited.
+- Synthetic Git scenario (`npm run seed`): merge, squash, rebase, verified and edited backports.
+- Tests: 60 passing (`npm test`, 2026-11-15): chunker 7, GitHub client 6, store 7, inbox 6,
+  import + scenario 5, plus Phase 1 suites.
+- Real import check (unauthenticated, 2026-11-15): `sindresorhus/is-docker` initial import used 16
+  requests (33 commits, 7 releases, 10 issues, 8 PRs, 45 comments, 8 doc revisions); re-run used 6
+  requests and wrote nothing new.
+
 ## Known limitations so far
+- Comments do not bump the parent issue's revision; doc revisions do not follow renames; rewritten
+  history can renumber document revisions.
+- Release edits are detected by content digest only (the REST API has no release updated_at).
+- Per import, details (commits, reviews) are fetched for at most 100 merged PRs; empty reviews skipped.
+- `commits.ingested` is emitted after the commit bulk insert (commits are immutable, so it is not
+  needed for correctness); branch moves emit no events.
+- Imports run inside the API process (no job queue); inbox reprocessing is not yet scheduled (Phase 3).
+- Patch-id computation for backport matching is deferred to Phase 4.
 - No teams/orgs expansion: permissions are direct grants only (`source` field reserved).
 - Session cookie lacks the Secure flag until served over HTTPS (`COOKIE_SECURE=true`).
 - In-process rate limiter and ACL cache (single API instance); production would share them.

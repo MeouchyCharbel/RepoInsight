@@ -20,7 +20,7 @@ export async function aclRoutes(app: FastifyInstance) {
   app.get('/repos/:repoId/permissions', async (req) => {
     const { repoId } = parse(repoParams, req.params);
     await acl.requireManage(req.principal!, repoId);
-    const perms = await db.collection<PermissionDoc>('permissions').find({ repo_id: repoId }).toArray();
+    const perms = await db.collection<PermissionDoc>('permissions').find({ repo_id: repoId, role: { $ne: null } }).toArray();
     const users = await db
       .collection<UserDoc>('users')
       .find({ user_id: { $in: perms.map((p) => p.principal_id) } }, { projection: { user_id: 1, username: 1 } })

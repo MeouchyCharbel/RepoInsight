@@ -23,7 +23,12 @@ export const INDEXES: Record<string, IndexDescription[]> = {
     { key: { token_hash: 1 }, unique: true },
     { key: { expires_at: 1 }, expireAfterSeconds: 0 },
   ],
-  repositories: [{ key: { repo_id: 1 }, unique: true }, { key: { visibility: 1, full_name: 1 } }],
+  repositories: [
+    { key: { repo_id: 1 }, unique: true },
+    { key: { visibility: 1, full_name: 1 } },
+    { key: { provider: 1, provider_id: 1 }, unique: true, partialFilterExpression: { provider_id: { $exists: true } } },
+  ],
+  contributors: [{ key: { contributor_id: 1 }, unique: true }],
   permissions: [
     { key: { repo_id: 1, principal_id: 1 }, unique: true },
     { key: { principal_id: 1, repo_id: 1 } }, // readable-repository set for a user
@@ -35,7 +40,8 @@ export const INDEXES: Record<string, IndexDescription[]> = {
     { key: { repo_id: 1, updated_at: -1, number: -1 } },
     { key: { repo_id: 1, fixed_in_release: 1, updated_at: -1 } },
   ],
-  issue_revisions: [{ key: { repo_id: 1, number: 1, revision: 1 }, unique: true }],
+  // Keyed by provider timestamp so a late, older revision is kept as history without a number clash.
+  issue_revisions: [{ key: { repo_id: 1, number: 1, source_updated_at: 1 }, unique: true }],
   pull_requests: [
     { key: { repo_id: 1, number: 1 }, unique: true },
     { key: { repo_id: 1, merged_sha: 1 } },
@@ -61,16 +67,17 @@ export const INDEXES: Record<string, IndexDescription[]> = {
     { key: { repo_id: 1, chunk_id: 1 }, unique: true },
     { key: { repo_id: 1, source_id: 1, revision: 1 } },
     { key: { repo_id: 1, config_keys: 1 } },
+    { key: { repo_id: 1, source_id: 1, is_latest: 1 } },
   ],
   blobs: [{ key: { digest: 1 }, unique: true }], // content-addressed text (replaces object storage)
   edges: [
     { key: { repo_id: 1, from: 1, relation: 1, to: 1 }, unique: true },
     { key: { repo_id: 1, to: 1, relation: 1 } },
   ],
-  inbox: [{ key: { provider: 1, delivery_id: 1 }, unique: true }],
+  inbox: [{ key: { provider: 1, delivery_id: 1 }, unique: true }, { key: { status: 1, received_at: 1 } }],
   outbox: [{ key: { event_id: 1 }, unique: true }, { key: { published_at: 1, created_at: 1 } }],
   processed_events: [{ key: { consumer: 1, event_id: 1 }, unique: true }],
-  import_jobs: [{ key: { repo_id: 1, started_at: -1 } }],
+  import_jobs: [{ key: { job_id: 1 }, unique: true }, { key: { repo_full_name: 1, started_at: -1 } }],
   issue_activity_daily: [{ key: { repo_id: 1, day: 1, label: 1 }, unique: true }],
   query_logs: [
     { key: { tenant_id: 1, day: 1, query_id: 1 } },

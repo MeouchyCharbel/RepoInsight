@@ -4,8 +4,12 @@
   "version": "0.1.0",
   "description": "Project 19 prototype - Repository, Issue and Documentation Assistant",
   "type": "module",
-  "engines": { "node": ">=20.12" },
-  "workspaces": ["backend"],
+  "engines": {
+    "node": ">=20.12"
+  },
+  "workspaces": [
+    "backend"
+  ],
   "scripts": {
     "dev:api": "npm -w backend run dev",
     "seed": "npm -w backend run seed",
@@ -16,6 +20,7 @@
     "infra:status": "docker compose ps",
     "infra:logs": "docker compose logs --tail=100",
     "infra:down": "docker compose down",
-    "infra:reset": "docker compose down -v"
+    "infra:reset": "docker compose down -v",
+    "import": "npm -w backend run import --"
   }
 }

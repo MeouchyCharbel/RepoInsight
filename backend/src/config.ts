@@ -12,6 +12,9 @@ const schema = z.object({
   API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   DEMO_USER_PASSWORD: z.string().min(12).optional(),
+  GITHUB_TOKEN: z.string().optional().transform((v) => (v ? v : undefined)),
+  // Local Git clones and fixture repositories (git-ignored).
+  DATA_DIR: z.string().default(fileURLToPath(new URL('../../data', import.meta.url))),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 

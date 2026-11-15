@@ -21,6 +21,7 @@ export interface SessionDoc {
 
 export interface RepositoryDoc {
   repo_id: string;
+  provider?: 'github' | 'synthetic';
   provider_id?: number;
   org_id: string;
   full_name: string;
@@ -35,9 +36,10 @@ export interface RepositoryDoc {
 export interface PermissionDoc {
   repo_id: string;
   principal_id: string;
-  role: Role;
-  source: 'direct' | 'team' | 'org';
-  acl_epoch: number; // repository epoch at which this grant was written
+  role: Role | null; // null = revoked (tombstone, so an older grant arriving late is ignored)
+  source: 'direct' | 'team' | 'org' | 'provider';
+  acl_epoch: number; // repository epoch at which this change was written
+  seq: number; // source sequence of the change; older changes are ignored
   updated_at: Date;
 }
 
@@ -52,8 +54,117 @@ export interface IssueDoc {
   revision: number;
   created_at: Date;
   updated_at: Date;
+  source_updated_at?: Date; // provider updated_at, used for ordering
+  content_digest?: string;
+  closed_at?: Date | null;
   fixed_in_release?: string;
   fixed_in_status?: 'verified' | 'unverified';
+}
+
+export interface PullRequestDoc {
+  repo_id: string;
+  number: number;
+  title: string;
+  body: string;
+  state: 'open' | 'closed';
+  labels: string[];
+  author_id: string;
+  base_ref: string;
+  head_ref: string;
+  head_sha: string;
+  merged_at: Date | null;
+  // Only set when merged. GitHub's merge_commit_sha also exists on unmerged PRs (test merge), so it
+  // is never trusted unless merged_at is set.
+  merged_sha: string | null;
+  closes_issues: number[];
+  head_commits: string[]; // PR_CONTAINS_COMMIT: review context only, never proof of release inclusion
+  created_at: Date;
+  updated_at: Date;
+  source_updated_at: Date;
+  revision: number;
+  content_digest: string;
+}
+
+export interface CommentDoc {
+  repo_id: string;
+  thread_key: string; // issue:81 or pr:95
+  comment_id: string;
+  kind: 'issue_comment' | 'review_comment' | 'review';
+  author_id: string;
+  body: string;
+  file_path?: string | null;
+  diff_line?: number | null;
+  review_state?: string | null;
+  created_at: Date;
+  updated_at: Date;
+  source_updated_at: Date;
+  revision: number;
+  content_digest: string;
+}
+
+export interface ReleaseDoc {
+  repo_id: string;
+  release_id: string; // tag
+  name: string;
+  body: string;
+  target_sha: string | null; // resolved from the Git tag, never from the API's target_commitish
+  published_at: Date;
+  channel: 'stable' | 'pre';
+  effective?: boolean;
+  security_epoch?: number;
+  prev_release_id?: string | null;
+  source_updated_at: Date;
+  revision: number;
+  content_digest: string;
+  updated_at: Date;
+}
+
+export interface CommitDoc {
+  repo_id: string;
+  sha: string;
+  parent_shas: string[];
+  generation: number; // 1 + max(parent generations)
+  author_id: string;
+  committed_at: Date;
+  message: string;
+  changed_paths: string[]; // capped
+  changed_paths_truncated: boolean;
+  cherry_picked_from: string | null; // from a "(cherry picked from commit <sha>)" trailer
+}
+
+export interface DocumentRevisionDoc {
+  repo_id: string;
+  source_id: string;
+  revision: number;
+  kind: 'doc' | 'release_notes';
+  commit_sha: string | null;
+  committed_at: Date;
+  source_digest: string; // blobs.digest
+  created_at: Date;
+}
+
+export interface ChunkDoc {
+  repo_id: string;
+  chunk_id: string;
+  source_type: 'doc' | 'release_notes' | 'issue' | 'pr' | 'comment';
+  source_id: string;
+  revision: number;
+  section_anchor: string;
+  heading_path: string[];
+  ordinal: number;
+  line_start: number;
+  line_end: number;
+  text: string;
+  text_digest: string;
+  config_keys: string[];
+  labels: string[];
+  thread_title: string | null;
+  is_latest: boolean;
+  guidance_status: 'current' | 'historical' | 'unknown';
+  superseded_by_revision: number | null;
+  release_ids: string[]; // filled by release tracing (Phase 4)
+  commit_sha: string | null;
+  created_at: Date;
 }
 
 export interface OutboxDoc {

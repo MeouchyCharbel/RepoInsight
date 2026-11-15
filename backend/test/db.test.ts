@@ -15,7 +15,7 @@ describe('MongoDB schema', () => {
   });
 
   it('starts every repository-scoped unique key with repo_id', () => {
-    const global = new Set(['users', 'sessions', 'blobs', 'inbox', 'outbox', 'processed_events']);
+    const global = new Set(['users', 'sessions', 'blobs', 'inbox', 'outbox', 'processed_events', 'contributors', 'import_jobs', 'repositories']);
     for (const [name, specs] of Object.entries(INDEXES)) {
       if (global.has(name)) continue;
       for (const s of specs.filter((x) => x.unique)) expect(Object.keys(s.key)[0], name).toBe('repo_id');

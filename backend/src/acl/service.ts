@@ -118,7 +118,7 @@ export class AclService {
   async memberRepoIds(p: Principal): Promise<string[]> {
     try {
       const rows = await this.perms('majority')
-        .find({ principal_id: p.userId }, { projection: { _id: 0, repo_id: 1 }, maxTimeMS: this.opts.timeoutMs })
+        .find({ principal_id: p.userId, role: { $ne: null } }, { projection: { _id: 0, repo_id: 1 }, maxTimeMS: this.opts.timeoutMs })
         .toArray();
       return rows.map((r) => r.repo_id);
     } catch {
@@ -134,14 +134,48 @@ export class AclService {
   async setPermission(actor: Principal, repoId: string, username: string, role: Role | null, ip?: string) {
     const user = await this.db.collection<UserDoc>('users').findOne({ username });
     if (!user) throw new HttpError(400, 'unknown_user', 'Unknown user');
+    const res = await this.writePermission(actor.userId, repoId, user.user_id, role, Date.now(), 'direct', ip);
+    return { repo_id: repoId, principal_id: user.user_id, role, acl_epoch: res.acl_epoch, changed: res.changed };
+  }
+
+  /**
+   * Permission change from the provider event stream. `seq` is the provider's sequence for this
+   * (repo, principal); a change older than the stored one (e.g. a grant arriving after a newer
+   * revoke) is ignored, as in report 6.3.
+   */
+  async applyProviderPermission(repoId: string, principalId: string, role: Role | null, seq: number) {
+    return this.writePermission('system:provider', repoId, principalId, role, seq, 'provider');
+  }
+
+  private async writePermission(
+    actorId: string,
+    repoId: string,
+    principalId: string,
+    role: Role | null,
+    seq: number,
+    source: PermissionDoc['source'],
+    ip?: string,
+  ): Promise<{ acl_epoch: number; changed: boolean; ignored: boolean }> {
     const type = role ? 'access.granted' : 'access.revoked';
     let epoch = 0;
     let changed = true;
+    let ignored = false;
 
     const session = this.client.startSession();
     try {
       await session.withTransaction(
         async () => {
+          changed = true;
+          ignored = false;
+          const perms = this.db.collection<PermissionDoc>('permissions');
+          const cur = await perms.findOne({ repo_id: repoId, principal_id: principalId }, { session });
+          if (cur && cur.seq >= seq) {
+            ignored = true;
+            const repo = await this.db.collection<RepositoryDoc>('repositories').findOne({ repo_id: repoId }, { session });
+            epoch = repo?.acl_epoch ?? 0;
+            await audit(this.db, { actor_id: actorId, action: type, repo_id: repoId, target: principalId, outcome: 'denied', details: { reason: 'stale_sequence', seq, stored_seq: cur.seq } }, session);
+            return;
+          }
           const repo = await this.db
             .collection<RepositoryDoc>('repositories')
             .findOneAndUpdate(
@@ -151,24 +185,20 @@ export class AclService {
             );
           if (!repo) throw repoNotFound();
           epoch = repo.acl_epoch;
-          const perms = this.db.collection<PermissionDoc>('permissions');
-          if (role) {
-            await perms.updateOne(
-              { repo_id: repoId, principal_id: user.user_id },
-              { $set: { role, source: 'direct', acl_epoch: epoch, updated_at: new Date() } },
-              { upsert: true, session },
-            );
-          } else {
-            const res = await perms.deleteOne({ repo_id: repoId, principal_id: user.user_id }, { session });
-            changed = res.deletedCount === 1;
-          }
+          changed = (cur?.role ?? null) !== role;
+          // Revocation is a tombstone (role: null) so later, older grants can be recognised as stale.
+          await perms.updateOne(
+            { repo_id: repoId, principal_id: principalId },
+            { $set: { role, source, seq, acl_epoch: epoch, updated_at: new Date() } },
+            { upsert: true, session },
+          );
           await this.db.collection<OutboxDoc>('outbox').insertOne(
             {
               event_id: `${repoId}:acl:${epoch}`,
               topic: 'ri.permissions',
               key: repoId,
               type,
-              payload: { repo_id: repoId, principal_id: user.user_id, role, acl_epoch: epoch },
+              payload: { repo_id: repoId, principal_id: principalId, role, acl_epoch: epoch },
               created_at: new Date(),
               published_at: null,
               attempts: 0,
@@ -177,7 +207,7 @@ export class AclService {
           );
           await audit(
             this.db,
-            { actor_id: actor.userId, action: type, repo_id: repoId, target: user.user_id, outcome: 'success', details: { role, acl_epoch: epoch, changed }, ip },
+            { actor_id: actorId, action: type, repo_id: repoId, target: principalId, outcome: 'success', details: { role, acl_epoch: epoch, changed, source }, ip },
             session,
           );
         },
@@ -187,7 +217,7 @@ export class AclService {
       await session.endSession();
     }
     this.invalidateRepo(repoId);
-    return { repo_id: repoId, principal_id: user.user_id, role, acl_epoch: epoch, changed };
+    return { acl_epoch: epoch, changed, ignored };
   }
 
   /** Public <-> private. Same transactional pattern; increments acl_epoch. */

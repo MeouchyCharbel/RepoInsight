@@ -7,6 +7,11 @@ import { aclRoutes } from './acl/routes.js';
 import { SESSION_COOKIE, resolveSession } from './auth/sessions.js';
 import { authRoutes } from './auth/routes.js';
 import { AclUnavailableError, HttpError } from './errors.js';
+import { GitHubClient } from './ingest/github.js';
+import { Importer } from './ingest/importer.js';
+import { Inbox } from './ingest/inbox.js';
+import { ingestRoutes } from './ingest/routes.js';
+import { IngestStore } from './ingest/store.js';
 import { repoRoutes } from './repos/routes.js';
 import type { Principal } from './types.js';
 
@@ -27,6 +32,8 @@ export interface AppOptions {
   logger?: boolean;
   rateLimit?: { global: number; login: number };
   acl?: AclService;
+  github?: GitHubClient;
+  dataDir?: string;
 }
 
 const GENERIC: Record<number, [string, string]> = {
@@ -96,5 +103,12 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   await app.register(authRoutes, { cookieSecure: opts.cookieSecure ?? false, loginRateLimit: opts.rateLimit?.login ?? 10 });
   await app.register(repoRoutes);
   await app.register(aclRoutes);
+
+  const store = new IngestStore(opts.db, opts.client);
+  const importer = new Importer(opts.db, store, {
+    dataDir: opts.dataDir ?? 'data',
+    github: opts.github ?? new GitHubClient(),
+  });
+  await app.register(ingestRoutes, { importer, inbox: new Inbox(opts.db, store, app.acl) });
   return app;
 }
