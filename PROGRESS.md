@@ -17,7 +17,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 | Phase | Status |
 |---|---|
 | 0 Repo + infrastructure | done (2026-11-15) |
-| 1 Core backend, auth, ACL | pending |
+| 1 Core backend, auth, ACL | done (2026-11-15) |
 | 2 Ingestion | pending |
 | 3 Streaming / projections | pending |
 | 4 Release tracing | pending |
@@ -36,7 +36,25 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
 - Ports bound to 127.0.0.1 only. Idle memory: Mongo ~220 MB, Kafka ~340 MB, OpenSearch ~900 MB.
 - Automated infrastructure tests arrive with the backend in Phase 1.
 
+## Phase 1 summary (2026-11-15)
+- Fastify + TypeScript API (`backend/`), zod validation (strict query params, field names only in errors).
+- Sessions instead of JWT: `@fastify/jwt` was dropped because its `fast-jwt` dependency had critical
+  advisories. Random 256-bit token in an httpOnly SameSite=Strict cookie; only its SHA-256 is stored;
+  8 h TTL index; logout deletes it. Passwords hashed with Node's scrypt.
+- ACL per report 5.4/9.1: majority reads, membership cache valid only while `acl_epoch` matches,
+  linearizable re-check before every protected response, fail closed (503) if unverifiable.
+  Grant/revoke/visibility = one majority transaction: permission + `acl_epoch` + outbox + audit.
+- Uniform 404 for unreadable private repos; listings contain only readable repos; no totals returned.
+- Rate limits (300/min global, 10/min login), `Cache-Control: no-store`, generic 500s, log redaction.
+- All report collections and indexes created (`src/db.ts`); unique keys start with `repo_id`.
+- `npm audit`: 0 vulnerabilities (zod 4.6.7, vitest 5.1.0).
+- Tests: 29 passing (auth 10, ACL 14, schema 4 + fail-closed 1) - `npm test`, 2026-11-15.
+
 ## Known limitations so far
+- No teams/orgs expansion: permissions are direct grants only (`source` field reserved).
+- Session cookie lacks the Secure flag until served over HTTPS (`COOKIE_SECURE=true`).
+- In-process rate limiter and ACL cache (single API instance); production would share them.
+- `withRead` re-checks access after the data read; it is a per-request guarantee, not a lock.
 - Single-node MongoDB replica set, single OpenSearch node, single Kafka broker: no sharding/replication (production design only).
 - OpenSearch uses its bundled demo TLS certificates (development only).
 - Kafka client listener uses SASL/PLAIN without TLS; acceptable only because it binds to 127.0.0.1.

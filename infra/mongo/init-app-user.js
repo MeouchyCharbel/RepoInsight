@@ -4,5 +4,9 @@ const dbName = process.env.MONGO_DB || 'repoinsight';
 db.getSiblingDB(dbName).createUser({
   user: process.env.MONGO_APP_USER,
   pwd: process.env.MONGO_APP_PASSWORD,
-  roles: [{ role: 'readWrite', db: dbName }],
+  // <db>_test is used only by the automated integration tests.
+  roles: [
+    { role: 'readWrite', db: dbName },
+    { role: 'readWrite', db: `${dbName}_test` },
+  ],
 });

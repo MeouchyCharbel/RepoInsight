@@ -16,7 +16,7 @@ const secrets = {
   // OpenSearch demands mixed character classes
   OPENSEARCH_ADMIN_PASSWORD: `Ri-${rnd(18)}9a!`,
   KAFKA_APP_PASSWORD: rnd(),
-  JWT_SECRET: randomBytes(48).toString('base64url'),
+  DEMO_USER_PASSWORD: rnd(18),
 };
 
 let env = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');
