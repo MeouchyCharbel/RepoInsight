@@ -22,7 +22,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 | 3 Streaming / projections | done (2026-11-15) |
 | 4 Release tracing | done (2026-11-15) |
 | 5 Search, citations, guidance, eval | done (2026-11-15) |
-| 6 Frontend | pending |
+| 6 Frontend | done (2026-11-15) |
 | 7 Docs, benchmarks, demo | pending |
 
 ## Phase 0 verification (manual checks, 2026-11-15)
@@ -143,7 +143,28 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
   rule marks it historical and current guidance is boosted. Benchmark smoke run (50 searches):
   p50 52 ms, answer p50 414 ms, indexing delay p50 1.0 s. Final measurements in Phase 7.
 
+## Phase 6 summary (2026-11-15)
+- React 19 + Vite 8 + React Router 7 frontend (`frontend/`), same-origin `/api` proxy (no CORS),
+  plain CSS design tokens with light/dark themes, 40 px+ touch targets, visible focus, mobile-first.
+- Views: sign-in; repositories; repository tabs (issues with label/state filters and keyset paging,
+  documentation, releases with fixes per release, guidance comparison, activity with watermark,
+  members for repository admins); issue page (markdown body, comments, revision history with
+  out-of-order flags, trace with verified/unverified/not-included per release and evidence);
+  document viewer (line numbers, cited-line highlight, revision list with releases, section markers);
+  search (repository/type/label/release/status filters, markers, verify-citation, open-source links);
+  ask (effective release, warnings, numbered verified citations by section).
+- Untrusted text: react-markdown without raw HTML, images dropped, links rel=noopener; snippets as
+  plain text. 404 messages never reveal existence; 503 offers retry; 401 returns to sign-in.
+- Backend: document/revision/comment read APIs (3 tests); answers keep only current evidence within
+  half of the best score (max 3) and snippets prefer body lines over headings.
+- Checked in the browser (2026-11-15): sign-in as carol (no private repo listed), issue #81 trace,
+  ask flow with citation verification, document viewer at 375 px width. Console: only the expected
+  401 from the pre-login session check. Backend tests: 104 passing; frontend type-check and build OK.
+
 ## Known limitations so far
+- No automated frontend tests (flows were checked manually in the browser).
+- No Content-Security-Policy header in the Vite dev server (would be set by the production web server).
+- No PR detail page or import UI (imports use the CLI or API).
 - Security-epoch rule over-labels: any older evidence mentioning a changed key (including the bug
   report that asked for the fix) is historical; this demotes it in ranking (report acknowledges this).
 - Answers are extractive excerpts; there is no natural-language synthesis.

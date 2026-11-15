@@ -72,7 +72,10 @@ export function citeOf(c: Pick<ChunkDoc, 'source_id' | 'revision' | 'section_anc
 function snippetOf(text: string, q: string): string {
   const terms = q.toLowerCase().split(/[^\p{L}\p{N}._-]+/u).filter((t) => t.length >= 3);
   const lines = text.split('\n');
-  const i = Math.max(0, lines.findIndex((l) => terms.some((t) => l.toLowerCase().includes(t))));
+  const hit = (l: string) => terms.some((t) => l.toLowerCase().includes(t));
+  // Prefer a body line over a heading, so the excerpt carries the actual statement.
+  let i = lines.findIndex((l) => hit(l) && !/^\s*#/.test(l));
+  if (i < 0) i = Math.max(0, lines.findIndex(hit));
   const s = lines.slice(Math.max(0, i - 1), i + 2).join('\n').trim();
   return s.length > 300 ? `${s.slice(0, 297)}...` : s;
 }
@@ -338,8 +341,11 @@ export class SearchService {
     const r = await this.search(p, { q: query, repo: repoId, status: 'all', limit: 20 });
     const isCurrentGuidance = (i: SearchItem) =>
       i.marker === 'current' && !!eff && (i.source_type === 'release_notes' || i.release_ids.includes(eff.release_id));
-    const current = r.items.filter(isCurrentGuidance).sort((a, b) => Number(b.source_type === 'doc') - Number(a.source_type === 'doc'));
-    const supporting = r.items.filter((i) => !isCurrentGuidance(i) && (i.marker === 'unknown' || i.marker === 'current'));
+    // Current guidance must also be relevant: within half of the best current score, at most 3.
+    const currentAll = r.items.filter(isCurrentGuidance);
+    const best = Math.max(0, ...currentAll.map((i) => i.score));
+    const current = currentAll.filter((i) => i.score >= best * 0.5).sort((a, b) => b.score - a.score).slice(0, 3);
+    const supporting = r.items.filter((i) => !current.includes(i) && !isCurrentGuidance(i) && (i.marker === 'unknown' || i.marker === 'current'));
     const historical = r.items.filter((i) => i.marker === 'historical' || i.marker === 'superseded' || i.marker === 'possibly_outdated');
 
     const security = SECURITY_QUERY.test(query) || r.items.some((i) => i.labels.includes('security'));

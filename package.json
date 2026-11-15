@@ -8,7 +8,8 @@
     "node": ">=20.12"
   },
   "workspaces": [
-    "backend"
+    "backend",
+    "frontend"
   ],
   "scripts": {
     "dev:api": "npm -w backend run dev",
@@ -27,6 +28,8 @@
     "search:rebuild": "npm -w backend run search:rebuild",
     "activity:recompute": "npm -w backend run activity:recompute --",
     "eval": "npm -w backend run eval",
-    "bench": "npm -w backend run bench --"
+    "bench": "npm -w backend run bench --",
+    "dev:web": "npm -w frontend run dev",
+    "build:web": "npm -w frontend run build"
   }
 }

@@ -4,7 +4,7 @@ Prototype of the *Repository, Issue and Documentation Assistant* described in th
 architecture report. MongoDB is the authoritative store; OpenSearch and other views are derived
 from it through a transactional outbox and Kafka.
 
-> Status: **Phase 5 (search, citations, current-vs-historical guidance, evaluation)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
+> Status: **Phase 6 (React frontend)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
 > what is tested, and what remains production-design only.
 
 ## Stack
@@ -15,7 +15,7 @@ from it through a transactional outbox and Kafka.
 | OpenSearch 2.19 | Full-text retrieval and filters (derived, rebuildable) | Single node, security plugin on, 512 MB heap |
 | Kafka 3.9 (KRaft) | Change events between the outbox and projectors | Single broker, no ZooKeeper, SASL/PLAIN |
 | Node.js + TypeScript | Backend API (Fastify) and workers | `backend/`, listens on 127.0.0.1:4000 |
-| React + TypeScript | Frontend | *Phase 6* |
+| React + TypeScript | Frontend (Vite, React Router) | `frontend/`, 127.0.0.1:5173, proxies `/api` to the API |
 
 All services bind to `127.0.0.1` only. Expected memory use is about 3 GB.
 
@@ -52,6 +52,12 @@ npm run seed
 
 ```bash
 npm run dev:api
+```
+
+In a second terminal, start the web app and open http://127.0.0.1:5173:
+
+```bash
+npm run dev:web
 ```
 
 Demo users `alice` (admin of the private repo), `bob` (reader), `carol` (no private access) and
@@ -136,6 +142,15 @@ Search, citations and guidance:
 Search pre-filters by public visibility or MongoDB membership, then re-checks every hit against
 MongoDB (access, canonical chunk, digest) and re-checks access before responding. Snippets come
 from MongoDB, not the index, and no hit totals are returned.
+
+Documents and issue threads:
+
+| Method and path | Purpose |
+|---|---|
+| `GET /repos/:repoId/documents` | Documentation and release-note sources |
+| `GET /repos/:repoId/document?source_id=&revision=` | One revision: text, section map with markers, revision history with releases |
+| `GET /repos/:repoId/issues/:number/comments` | Issue comments |
+| `GET /repos/:repoId/issues/:number/revisions` | Issue revision history (late, out-of-order updates flagged) |
 
 Platform admins only:
 

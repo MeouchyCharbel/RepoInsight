@@ -13,6 +13,7 @@ import { Inbox } from './ingest/inbox.js';
 import { ingestRoutes } from './ingest/routes.js';
 import { IngestStore } from './ingest/store.js';
 import { repoRoutes } from './repos/routes.js';
+import { docRoutes } from './docs/routes.js';
 import { TraceBuilder } from './trace/builder.js';
 import type { Client } from '@opensearch-project/opensearch';
 import { randomBytes } from 'node:crypto';
@@ -134,5 +135,6 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   const log = new QueryLog(opts.db, opts.queryLog ?? { salt: randomBytes(32).toString('hex'), rawText: false });
   const service = new SearchService(opts.db, opts.search?.client ?? null, opts.search?.alias ?? 'ri-chunks', app.acl, log);
   await app.register(searchRoutes, { service, log });
+  await app.register(docRoutes);
   return app;
 }
