@@ -1,0 +1,249 @@
+{
+  "kind": "retrieval-evaluation",
+  "run_at": "2026-11-15T09:16:57.934Z",
+  "methodology": "Hand-labelled judgments (eval/queries.json) on the synthetic scenario; BM25 retrieval with permission pre-filter and MongoDB post-verification; top 10 per query. Small dataset: results show correctness of the pipeline, not production-scale relevance.",
+  "environment": {
+    "machine": {
+      "cpu": "13th Gen Intel(R) Core(TM) i7-1355U",
+      "logical_cores": 12,
+      "memory_gb": 17,
+      "os": "win32 10.0.26300"
+    },
+    "software": {
+      "node": "v24.14.1",
+      "docker_engine": "29.7.2",
+      "mongodb": "8.0.12",
+      "opensearch": "2.19.2",
+      "kafka": "3.9.1 (KRaft)"
+    },
+    "topology": "single-node MongoDB replica set, single OpenSearch node, single Kafka broker (Docker Desktop, WSL 2)",
+    "dataset": {
+      "repositories": 104,
+      "issues": 1841,
+      "pull_requests": 12,
+      "comments": 5448,
+      "document_revisions": 829,
+      "chunks": 16576,
+      "commits": 48,
+      "outbox_events": 11882,
+      "unpublished_events": 0,
+      "index_documents": 16576
+    }
+  },
+  "metrics": {
+    "queries": 12,
+    "recall_at_10": 1,
+    "mrr": 0.822,
+    "citation_valid_rate": 1,
+    "citations_checked": 83,
+    "unauthorized_result_rate": 0,
+    "unauthorized_results": 0,
+    "stale_security_advice_rate": 0
+  },
+  "per_query": [
+    {
+      "id": "q01",
+      "q": "What is the default tls.min_version?",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "docs/tls.md@rev3#secure-defaults L3-10",
+        "release/v2.4.1@rev1#security L3-5",
+        "release/v2.3.5@rev1#security L3-5"
+      ]
+    },
+    {
+      "id": "q02",
+      "q": "TLS setting regression",
+      "recall_at_10": 1,
+      "reciprocal_rank": 0.1111111111111111,
+      "first_relevant_rank": 9,
+      "top3": [
+        "docs/tls.md@rev3#tls-configuration L1-1",
+        "README.md@rev2#acmetls-proxy L1-5",
+        "docs/tls.md@rev3#certificates L12-14"
+      ]
+    },
+    {
+      "id": "q03",
+      "q": "supported cipher suites",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "docs/tls.md@rev3#cipher-suites L18-20",
+        "docs/ciphers.md@rev1#cipher-suites L1-3",
+        "docs/tls.md@rev2#cipher-suites L17-19"
+      ]
+    },
+    {
+      "id": "q04",
+      "q": "OCSP stapling",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "docs/ocsp.md@rev1#ocsp-stapling L1-3",
+        "release/v2.4.1@rev1#features L7-9",
+        "pr:96@rev1 L1-1"
+      ]
+    },
+    {
+      "id": "q05",
+      "q": "how do I report a vulnerability",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "SECURITY.md@rev1#security-policy L1-3",
+        "docs/tls.md@rev3#secure-defaults L3-10",
+        "issue:90@rev2 L1-1"
+      ]
+    },
+    {
+      "id": "q06",
+      "q": "where are certificates placed",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "docs/tls.md@rev3#certificates L12-14",
+        "docs/tls.md@rev1#certificates L11-13",
+        "docs/tls.md@rev2#certificates L11-13"
+      ]
+    },
+    {
+      "id": "q07",
+      "q": "old Android clients fail the handshake",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "issue:12@rev2 L1-3",
+        "issue:12/comment:4410@rev1 L1-1",
+        "pr:95/comment:review-302@rev1 L1-1"
+      ]
+    },
+    {
+      "id": "q08",
+      "q": "why was TLS 1.0 dropped downgrade attacks",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "docs/tls.md@rev3#secure-defaults L3-10",
+        "release/v2.4.1@rev1#security L3-5",
+        "docs/tls.md@rev3#tls-configuration L1-1"
+      ]
+    },
+    {
+      "id": "q09",
+      "q": "backport of the TLS default to 2.3",
+      "recall_at_10": 1,
+      "reciprocal_rank": 0.25,
+      "first_relevant_rank": 4,
+      "top3": [
+        "docs/tls.md@rev3#secure-defaults L3-10",
+        "release/v2.4.1@rev1#security L3-5",
+        "docs/ocsp.md@rev1#ocsp-stapling L1-3"
+      ]
+    },
+    {
+      "id": "q10",
+      "q": "explain how to restrict cipher suites",
+      "recall_at_10": 1,
+      "reciprocal_rank": 0.5,
+      "first_relevant_rank": 2,
+      "top3": [
+        "docs/ciphers.md@rev1#cipher-suites L1-3",
+        "issue:90@rev2 L1-1",
+        "docs/tls.md@rev3#cipher-suites L18-20"
+      ]
+    },
+    {
+      "id": "q11",
+      "q": "HTTP/3 listener",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "pr:97@rev1 L1-1",
+        "release/v2.3.5@rev1#v235 L1-1",
+        "release/v2.3.5@rev1#security L3-5"
+      ]
+    },
+    {
+      "id": "q12",
+      "q": "payments gateway mutual TLS",
+      "recall_at_10": 1,
+      "reciprocal_rank": 1,
+      "first_relevant_rank": 1,
+      "top3": [
+        "docs/payments.md@rev1#tls L3-5",
+        "docs/payments.md@rev1#payments-gateway L1-1",
+        "docs/tls.md@rev3#tls-configuration L1-1"
+      ]
+    }
+  ],
+  "leak_probes": [
+    {
+      "id": "p01",
+      "results": 50,
+      "unauthorized_results": 0
+    },
+    {
+      "id": "p02",
+      "results": 0,
+      "unauthorized_results": 0
+    },
+    {
+      "id": "p03",
+      "results": 0,
+      "unauthorized_results": 0
+    }
+  ],
+  "security_answers": [
+    {
+      "id": "s01",
+      "q": "What should tls.min_version be set to?",
+      "effective_release": "v2.4.1",
+      "current_citations": [
+        "docs/tls.md@rev3#secure-defaults L3-10",
+        "release/v2.4.1@rev1#security L3-5",
+        "docs/tls.md@rev3#tls-configuration L1-1"
+      ],
+      "stale_current_citations": 0,
+      "withheld": false,
+      "warnings": [
+        "Older guidance on this topic was superseded by a security change; do not apply it."
+      ]
+    },
+    {
+      "id": "s02",
+      "q": "Can I allow TLS 1.0 for legacy clients?",
+      "effective_release": "v2.4.1",
+      "current_citations": [
+        "release/v2.4.1@rev1#security L3-5",
+        "docs/tls.md@rev3#secure-defaults L3-10",
+        "docs/tls.md@rev3#tls-configuration L1-1"
+      ],
+      "stale_current_citations": 0,
+      "withheld": false,
+      "warnings": [
+        "Older guidance on this topic was superseded by a security change; do not apply it."
+      ]
+    },
+    {
+      "id": "s03",
+      "q": "Which TLS version does the payments gateway require?",
+      "effective_release": null,
+      "current_citations": [],
+      "stale_current_citations": 0,
+      "withheld": true,
+      "warnings": [
+        "This repository has no resolvable release, so current security guidance cannot be verified. No configuration is recommended."
+      ]
+    }
+  ]
+}

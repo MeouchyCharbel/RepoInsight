@@ -64,6 +64,20 @@ describe('permission-safe search, citations and current-vs-historical guidance',
     expect(await ctx.db.collection('edges').countDocuments({ repo_id: PUB, relation: 'GUIDANCE_SUPERSEDES', to: { $regex: '^chunk:' }, status: 'active' })).toBeGreaterThan(2);
   });
 
+  it('incremental (one thread) re-classification matches a full pass', async () => {
+    const at = new Date(Date.UTC(2026, 9, 4));
+    await new IngestStore(ctx.db, ctx.client).upsertComment({ repo_id: PUB, thread_key: 'issue:12', comment_id: 'inc-1', kind: 'issue_comment', author_id: 'u_bob', body: 'Still using `tls.min_version: "1.0"` here.', created_at: at, source_updated_at: at });
+    const { GuidanceService } = await import('../src/guidance/classify.js');
+    const g = new GuidanceService(ctx.db);
+    const before = await ctx.db.collection('chunks').find({ repo_id: PUB, source_id: { $not: /^issue:12/ } }, { projection: { _id: 0, chunk_id: 1, guidance_status: 1, superseded_by: 1 } }).toArray();
+    await g.reclassify(PUB, { thread: 'issue:12' });
+    const incremental = await ctx.db.collection('chunks').findOne({ repo_id: PUB, source_id: 'issue:12/comment:inc-1' });
+    expect(incremental).toMatchObject({ guidance_status: 'historical', superseded_by: { ref: 'v2.4.1', reason: 'security_epoch' } });
+    const after = await ctx.db.collection('chunks').find({ repo_id: PUB, source_id: { $not: /^issue:12/ } }, { projection: { _id: 0, chunk_id: 1, guidance_status: 1, superseded_by: 1 } }).toArray();
+    expect(after).toEqual(before); // other evidence untouched
+    expect((await g.reclassify(PUB)).changed).not.toContain('issue:12/comment:inc-1'); // full pass agrees
+  });
+
   it('returns current, cited results first; status=current hides superseded evidence', async () => {
     const items = await search('carol', `q=${encodeURIComponent('TLS minimum version')}&repo=${PUB}&status=current`);
     expect(items.length).toBeGreaterThan(0);

@@ -18,7 +18,12 @@ import { isSecurityRelease, resolveEffective } from './release.js';
 export class GuidanceService {
   constructor(private db: Db) {}
 
-  async reclassify(repoId: string): Promise<{ changed: string[]; effective: string | null }> {
+  /**
+   * Full re-classification of a repository, or (with `thread`) only the chunks of one issue/PR
+   * thread. Issue and comment events cannot change other evidence, so the worker uses the
+   * incremental form for them; documentation and release events re-classify the repository.
+   */
+  async reclassify(repoId: string, opts: { thread?: string } = {}): Promise<{ changed: string[]; effective: string | null }> {
     const eff = await resolveEffective(this.db, repoId).catch(() => null);
     const graph = new CommitGraph(this.db, repoId);
     const releases = await this.db.collection<ReleaseDoc>('releases').find({ repo_id: repoId }).toArray();
@@ -30,16 +35,22 @@ export class GuidanceService {
       if ((await graph.isAncestor(r.target_sha, eff.target_sha)) === 'yes') security.push({ id: r.release_id, at: r.published_at, keys: extractConfigKeys(r.body) });
     }
     security.sort((a, b) => +b.at - +a.at);
-    await this.db.collection('releases').updateMany({ repo_id: repoId }, { $set: { effective: false } });
-    if (eff) await this.db.collection('releases').updateOne({ repo_id: repoId, release_id: eff.release_id }, { $set: { effective: true, security_epoch: eff.security_epoch } });
+    if (!opts.thread) {
+      await this.db.collection('releases').updateMany({ repo_id: repoId }, { $set: { effective: false } });
+      if (eff) await this.db.collection('releases').updateOne({ repo_id: repoId, release_id: eff.release_id }, { $set: { effective: true, security_epoch: eff.security_epoch } });
+    }
 
-    const chunks = await this.db.collection<ChunkDoc>('chunks').find({ repo_id: repoId }).toArray();
+    const chunkColl = this.db.collection<ChunkDoc>('chunks');
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const chunks = await chunkColl.find({ repo_id: repoId, ...(opts.thread ? { source_id: { $regex: `^${escape(opts.thread)}(/|$)` } } : {}) }).toArray();
+    // Reference evidence (current docs and release notes) is needed even for a thread-only pass.
+    const reference = opts.thread ? await chunkColl.find({ repo_id: repoId, source_type: { $in: ['doc', 'release_notes'] }, is_latest: true }).toArray() : chunks;
     const time = await this.sourceTimes(repoId);
     const sourceTime = (c: ChunkDoc) => time.get(`${c.source_type}|${c.source_id}|${c.revision}`) ?? time.get(`${c.source_type}|${c.source_id}`) ?? c.created_at;
 
     // Current documentation in the effective release, per configuration key (earliest revision time).
     const currentDocKey = new Map<string, { at: Date; ref: string }>();
-    for (const c of chunks) {
+    for (const c of reference) {
       if (c.source_type !== 'doc' || !c.is_latest || !eff || !c.release_ids.includes(eff.release_id)) continue;
       for (const k of c.config_keys) {
         const at = sourceTime(c);
@@ -47,7 +58,7 @@ export class GuidanceService {
       }
     }
     const notesChunk = new Map<string, string>(); // release id -> notes chunk id
-    for (const c of chunks) if (c.source_type === 'release_notes') notesChunk.set(c.source_id.slice(8), c.chunk_id);
+    for (const c of reference) if (c.source_type === 'release_notes') notesChunk.set(c.source_id.slice(8), c.chunk_id);
 
     const changed = new Set<string>();
     const edges: Omit<EdgeDoc, 'repo_id' | 'created_at' | 'updated_at'>[] = [];
@@ -86,7 +97,7 @@ export class GuidanceService {
         changed.add(c.source_id);
       }
     }
-    await this.writeEdges(repoId, edges);
+    await this.writeEdges(repoId, edges, opts.thread ? chunks.map((c) => `chunk:${c.chunk_id}`) : null);
 
     if (changed.size) {
       const ids = [...changed].sort();
@@ -110,11 +121,14 @@ export class GuidanceService {
     return t;
   }
 
-  private async writeEdges(repoId: string, next: Omit<EdgeDoc, 'repo_id' | 'created_at' | 'updated_at'>[]) {
+  private async writeEdges(repoId: string, next: Omit<EdgeDoc, 'repo_id' | 'created_at' | 'updated_at'>[], scope: string[] | null) {
     const coll = this.db.collection<EdgeDoc>('edges');
     const now = new Date();
     const keep = next.map((e) => ({ repo_id: repoId, from: e.from, relation: e.relation, to: e.to }));
     for (const e of next) await coll.updateOne({ repo_id: repoId, from: e.from, relation: e.relation, to: e.to }, { $set: { ...e, repo_id: repoId, updated_at: now }, $setOnInsert: { created_at: now } }, { upsert: true });
-    await coll.updateMany({ repo_id: repoId, relation: 'GUIDANCE_SUPERSEDES', status: { $ne: 'invalidated' }, ...(keep.length ? { $nor: keep } : {}) }, { $set: { status: 'invalidated', updated_at: now } });
+    await coll.updateMany(
+      { repo_id: repoId, relation: 'GUIDANCE_SUPERSEDES', status: { $ne: 'invalidated' }, ...(scope ? { to: { $in: scope } } : {}), ...(keep.length ? { $nor: keep } : {}) },
+      { $set: { status: 'invalidated', updated_at: now } },
+    );
   }
 }

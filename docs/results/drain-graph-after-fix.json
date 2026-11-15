@@ -1,0 +1,209 @@
+{
+  "kind": "projection-drain",
+  "run_at": "2026-11-15T09:10:46.876Z",
+  "methodology": "Backlog of unpublished outbox events, worker started at t=0 with one consumer per group (6 partitions on ri.changes). Completion = consumer has processed an event created at or after the newest outbox row. 1 s polling. Graph projector re-classifies the whole repository per event (prototype simplification), which dominates its time.",
+  "environment": {
+    "machine": {
+      "cpu": "13th Gen Intel(R) Core(TM) i7-1355U",
+      "logical_cores": 12,
+      "memory_gb": 17,
+      "os": "win32 10.0.26300"
+    },
+    "software": {
+      "node": "v24.14.1",
+      "docker_engine": "29.7.2",
+      "mongodb": "8.0.12",
+      "opensearch": "2.19.2",
+      "kafka": "3.9.1 (KRaft)"
+    },
+    "topology": "single-node MongoDB replica set, single OpenSearch node, single Kafka broker (Docker Desktop, WSL 2)",
+    "dataset": {
+      "repositories": 104,
+      "issues": 1821,
+      "pull_requests": 12,
+      "comments": 5448,
+      "document_revisions": 829,
+      "chunks": 16556,
+      "commits": 48,
+      "outbox_events": 11842,
+      "unpublished_events": 0,
+      "index_documents": 16556
+    }
+  },
+  "backlog_events": 0,
+  "seconds_to_catch_up": {
+    "relay": 0,
+    "ri-search-projector": 0,
+    "ri-activity-projector": 0,
+    "ri-graph-projector": 331.4
+  },
+  "events_per_second": {
+    "relay": 0,
+    "ri-search-projector": 0,
+    "ri-activity-projector": 0,
+    "ri-graph-projector": 0
+  },
+  "index_matches_mongodb": true,
+  "samples": [
+    {
+      "t_s": 0,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 10,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 20,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 31,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 42,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 52,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 62,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 73,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 84,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 95,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 105,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 115,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 126,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 137,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 148,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 158,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 168,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 179,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 190,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 201,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 211,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 221,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 232,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 243,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 254,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 264,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 274,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 285,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 296,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 307,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 317,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 327,
+      "unpublished": 0,
+      "index_docs": 16556
+    }
+  ]
+}

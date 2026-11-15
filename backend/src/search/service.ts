@@ -181,15 +181,17 @@ export class SearchService {
     let items = await this.toItems(kept.slice(0, params.limit), params.q);
     timings.verify = performance.now() - t2;
 
-    // Final linearizable re-check before anything leaves the server.
+    // Final re-check before anything leaves the server (one linearizable fence per request).
+    const t3 = performance.now();
     const aclEpochs: Record<string, number> = {};
-    for (const repoId of new Set(items.map((i) => i.repo_id))) {
-      const fresh = await this.acl.resolve(p, repoId, { final: true });
+    const finals = await this.acl.finalCheck(p, [...new Set(items.map((i) => i.repo_id))]);
+    for (const [repoId, fresh] of finals) {
       if (!fresh) {
         dropped.unauthorized += items.filter((i) => i.repo_id === repoId).length;
         items = items.filter((i) => i.repo_id !== repoId);
       } else aclEpochs[repoId] = fresh.aclEpoch;
     }
+    timings.final_acl = performance.now() - t3;
     timings.total = performance.now() - t0;
     return { items, dropped, aclEpochs, timings };
   }
@@ -220,6 +222,16 @@ export class SearchService {
    */
   async verifyCitation(p: Principal, repoId: string, chunkId: string): Promise<{ valid: boolean; reason: string | null; citation: Citation | null; text: string | null }> {
     await this.acl.requireRead(p, repoId);
+    const r = await this.checkCitation(repoId, chunkId);
+    await this.acl.requireRead(p, repoId, { final: true });
+    return r;
+  }
+
+  /**
+   * Content check only. Callers must already have checked access and must re-check it before
+   * responding (answer and compare do both once per request instead of once per citation).
+   */
+  private async checkCitation(repoId: string, chunkId: string): Promise<{ valid: boolean; reason: string | null; citation: Citation | null; text: string | null }> {
     const c = await this.db.collection<ChunkDoc>('chunks').findOne({ repo_id: repoId, chunk_id: chunkId });
     if (!c) return { valid: false, reason: 'unknown_chunk', citation: null, text: null };
     const source = await this.sourceText(c);
@@ -228,7 +240,6 @@ export class SearchService {
     if (source === null) return { valid: false, reason: 'source_revision_unavailable', citation, text: null };
     const slice = source.replace(/\r\n?/g, '\n').split('\n').slice(c.line_start - 1, c.line_end).join('\n');
     const valid = sha256(slice) === c.text_digest && slice === c.text;
-    await this.acl.requireRead(p, repoId, { final: true });
     return { valid, reason: valid ? null : 'content_mismatch', citation, text: valid ? slice : null };
   }
 
@@ -257,11 +268,12 @@ export class SearchService {
     }
   }
 
-  private async verified(p: Principal, cits: Citation[]) {
+  /** Citations of one access-checked repository (the caller performs the final re-check). */
+  private async verified(_p: Principal, cits: Citation[]) {
     const out: Citation[] = [];
     let valid = 0;
     for (const c of cits) {
-      const v = await this.verifyCitation(p, c.repo_id, c.chunk_id);
+      const v = await this.checkCitation(c.repo_id, c.chunk_id);
       if (v.valid) {
         valid++;
         out.push(c);

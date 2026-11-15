@@ -386,12 +386,12 @@ export class TraceBuilder {
         await this.buildPrEdges(repo, Number(p.number));
         await this.detectBackports(repo);
         for (const n of (p.closes_issues as number[] | undefined) ?? []) await this.updateIssueFix(repo, n);
-        await new GuidanceService(this.db).reclassify(repo);
+        await new GuidanceService(this.db).reclassify(repo, { thread: `pr:${p.number}` });
         return 'pr-edges';
       case 'issue.opened':
         await this.resolvePending(repo, `issue:${p.number}`);
         await this.updateIssueFix(repo, Number(p.number));
-        await new GuidanceService(this.db).reclassify(repo);
+        await new GuidanceService(this.db).reclassify(repo, { thread: `issue:${p.number}` });
         return 'pending-resolved';
       case 'release.published':
       case 'release.updated':
@@ -400,13 +400,18 @@ export class TraceBuilder {
         await new GuidanceService(this.db).reclassify(repo);
         return 'release-computed';
       case 'document.changed':
+        // New documentation can supersede other evidence: whole repository.
+        await new GuidanceService(this.db).reclassify(repo);
+        return 'guidance-reclassified';
       case 'issue.updated':
       case 'issue.closed':
       case 'issue.reopened':
+        // A discussion change only affects its own thread (incremental).
+        await new GuidanceService(this.db).reclassify(repo, { thread: `issue:${p.number}` });
+        return 'guidance-reclassified';
       case 'comment.added':
       case 'comment.edited':
-        // New evidence may be superseded (or supersede older evidence).
-        await new GuidanceService(this.db).reclassify(repo);
+        await new GuidanceService(this.db).reclassify(repo, { thread: String(p.thread_key) });
         return 'guidance-reclassified';
       case 'commits.ingested':
         // New history can complete pending edges, backports and release ranges (tags may have moved).

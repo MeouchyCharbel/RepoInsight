@@ -33,7 +33,7 @@ try {
     await search.search(users.get(q.user)!, { q: q.q, repo: q.repo, status: 'current', limit: 10 });
   }
   const totals: number[] = [];
-  const stages: Record<string, number[]> = { acl: [], search: [], verify: [] };
+  const stages: Record<string, number[]> = { acl: [], search: [], verify: [], final_acl: [] };
   for (let i = 0; i < ITER; i++) {
     const q = spec.queries[i % spec.queries.length]!;
     const r = await search.search(users.get(q.user)!, { q: q.q, repo: q.repo, status: 'current', limit: 10 });

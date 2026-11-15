@@ -1,0 +1,914 @@
+{
+  "kind": "projection-drain",
+  "run_at": "2026-11-15T09:02:25.834Z",
+  "methodology": "Backlog of unpublished outbox events, worker started at t=0 with one consumer per group (6 partitions on ri.changes). Completion = consumer has processed an event created at or after the newest outbox row. 1 s polling. Graph projector re-classifies the whole repository per event (prototype simplification), which dominates its time.",
+  "environment": {
+    "machine": {
+      "cpu": "13th Gen Intel(R) Core(TM) i7-1355U",
+      "logical_cores": 12,
+      "memory_gb": 17,
+      "os": "win32 10.0.26300"
+    },
+    "software": {
+      "node": "v24.14.1",
+      "docker_engine": "29.7.2",
+      "mongodb": "8.0.12",
+      "opensearch": "2.19.2",
+      "kafka": "3.9.1 (KRaft)"
+    },
+    "topology": "single-node MongoDB replica set, single OpenSearch node, single Kafka broker (Docker Desktop, WSL 2)",
+    "dataset": {
+      "repositories": 104,
+      "issues": 1821,
+      "pull_requests": 12,
+      "comments": 5448,
+      "document_revisions": 829,
+      "chunks": 16556,
+      "commits": 48,
+      "outbox_events": 11842,
+      "unpublished_events": 0,
+      "index_documents": 16556
+    }
+  },
+  "backlog_events": 11600,
+  "seconds_to_catch_up": {
+    "relay": 4.2,
+    "ri-search-projector": 249.5,
+    "ri-activity-projector": 194.2,
+    "ri-graph-projector": null
+  },
+  "events_per_second": {
+    "relay": 2781,
+    "ri-search-projector": 47,
+    "ri-activity-projector": 60,
+    "ri-graph-projector": null
+  },
+  "index_matches_mongodb": true,
+  "samples": [
+    {
+      "t_s": 0,
+      "unpublished": 11600,
+      "index_docs": 156
+    },
+    {
+      "t_s": 10,
+      "unpublished": 0,
+      "index_docs": 603
+    },
+    {
+      "t_s": 21,
+      "unpublished": 0,
+      "index_docs": 1237
+    },
+    {
+      "t_s": 31,
+      "unpublished": 0,
+      "index_docs": 1938
+    },
+    {
+      "t_s": 41,
+      "unpublished": 0,
+      "index_docs": 2630
+    },
+    {
+      "t_s": 52,
+      "unpublished": 0,
+      "index_docs": 3450
+    },
+    {
+      "t_s": 63,
+      "unpublished": 0,
+      "index_docs": 4287
+    },
+    {
+      "t_s": 73,
+      "unpublished": 0,
+      "index_docs": 5161
+    },
+    {
+      "t_s": 83,
+      "unpublished": 0,
+      "index_docs": 6040
+    },
+    {
+      "t_s": 94,
+      "unpublished": 0,
+      "index_docs": 6812
+    },
+    {
+      "t_s": 105,
+      "unpublished": 0,
+      "index_docs": 7714
+    },
+    {
+      "t_s": 115,
+      "unpublished": 0,
+      "index_docs": 8405
+    },
+    {
+      "t_s": 125,
+      "unpublished": 0,
+      "index_docs": 9345
+    },
+    {
+      "t_s": 136,
+      "unpublished": 0,
+      "index_docs": 9923
+    },
+    {
+      "t_s": 147,
+      "unpublished": 0,
+      "index_docs": 10667
+    },
+    {
+      "t_s": 157,
+      "unpublished": 0,
+      "index_docs": 11261
+    },
+    {
+      "t_s": 167,
+      "unpublished": 0,
+      "index_docs": 11862
+    },
+    {
+      "t_s": 178,
+      "unpublished": 0,
+      "index_docs": 12498
+    },
+    {
+      "t_s": 188,
+      "unpublished": 0,
+      "index_docs": 12980
+    },
+    {
+      "t_s": 198,
+      "unpublished": 0,
+      "index_docs": 13537
+    },
+    {
+      "t_s": 208,
+      "unpublished": 0,
+      "index_docs": 14228
+    },
+    {
+      "t_s": 219,
+      "unpublished": 1,
+      "index_docs": 14764
+    },
+    {
+      "t_s": 230,
+      "unpublished": 0,
+      "index_docs": 15423
+    },
+    {
+      "t_s": 240,
+      "unpublished": 0,
+      "index_docs": 15998
+    },
+    {
+      "t_s": 250,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 261,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 272,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 282,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 292,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 303,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 314,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 324,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 334,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 344,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 355,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 366,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 376,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 387,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 398,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 408,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 418,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 428,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 439,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 450,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 460,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 470,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 481,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 492,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 502,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 512,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 522,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 533,
+      "unpublished": 1,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 544,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 554,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 564,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 575,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 586,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 596,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 606,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 617,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 628,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 639,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 649,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 659,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 670,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 681,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 691,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 701,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 712,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 723,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 733,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 743,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 753,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 764,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 775,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 785,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 795,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 806,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 817,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 827,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 837,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 847,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 858,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 869,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 879,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 889,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 899,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 910,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 921,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 931,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 941,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 951,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 962,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 972,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 982,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 993,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1004,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1014,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1024,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1034,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1045,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1056,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1067,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1077,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1087,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1098,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1109,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1119,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1129,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1139,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1150,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1161,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1172,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1182,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1192,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1202,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1213,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1224,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1234,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1244,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1254,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1265,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1276,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1286,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1296,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1306,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1317,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1328,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1338,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1348,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1359,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1370,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1380,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1390,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1400,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1411,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1422,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1432,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1442,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1452,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1463,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1474,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1484,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1494,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1504,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1515,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1526,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1537,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1547,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1557,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1568,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1579,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1590,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1600,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1610,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1621,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1632,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1643,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1653,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1663,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1674,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1685,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1696,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1706,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1716,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1726,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1737,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1748,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1759,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1769,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1779,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1790,
+      "unpublished": 0,
+      "index_docs": 16556
+    },
+    {
+      "t_s": 1801,
+      "unpublished": 0,
+      "index_docs": 16556
+    }
+  ]
+}

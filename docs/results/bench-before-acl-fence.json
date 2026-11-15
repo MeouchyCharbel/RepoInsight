@@ -1,0 +1,58 @@
+{
+  "kind": "benchmark",
+  "run_at": "2026-11-15T09:14:14.306Z",
+  "methodology": "Sequential in-process calls (no HTTP layer), 200 search requests cycling 12 evaluation queries after 20 warm-up requests; answers cycle 2 security questions. Indexing delay = canonical MongoDB write until the chunk is countable in OpenSearch via the running worker. Single client, no concurrency: these are latency measurements, not throughput or capacity results.",
+  "environment": {
+    "machine": {
+      "cpu": "13th Gen Intel(R) Core(TM) i7-1355U",
+      "logical_cores": 12,
+      "memory_gb": 17,
+      "os": "win32 10.0.26300"
+    },
+    "software": {
+      "node": "v24.14.1",
+      "docker_engine": "29.7.2",
+      "mongodb": "8.0.12",
+      "opensearch": "2.19.2",
+      "kafka": "3.9.1 (KRaft)"
+    },
+    "topology": "single-node MongoDB replica set, single OpenSearch node, single Kafka broker (Docker Desktop, WSL 2)",
+    "dataset": {
+      "repositories": 104,
+      "issues": 1821,
+      "pull_requests": 12,
+      "comments": 5448,
+      "document_revisions": 829,
+      "chunks": 16556,
+      "commits": 48,
+      "outbox_events": 11842,
+      "unpublished_events": 0,
+      "index_documents": 16556
+    }
+  },
+  "search_latency_ms": {
+    "samples": 200,
+    "p50": 207.8,
+    "p95": 622.5,
+    "p99": 632.5,
+    "stages_p50": {
+      "acl": 2.3,
+      "search": 5.7,
+      "verify": 10.6
+    }
+  },
+  "answer_latency_ms": {
+    "samples": 40,
+    "p50": 2018.2,
+    "p95": 2367.3,
+    "p99": 2498.6
+  },
+  "indexing_delay": {
+    "measured": true,
+    "samples": 20,
+    "note": "Includes the 1 s OpenSearch refresh interval and 50 ms polling granularity.",
+    "p50_ms": 1013.1,
+    "p95_ms": 1039.3,
+    "max_ms": 1071.8
+  }
+}

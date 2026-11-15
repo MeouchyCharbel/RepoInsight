@@ -1,4 +1,4 @@
-import type { Db, MongoClient } from 'mongodb';
+import type { ClientSession, Db, MongoClient } from 'mongodb';
 import { audit } from '../audit.js';
 import { AclUnavailableError, HttpError, repoNotFound } from '../errors.js';
 import type {
@@ -54,13 +54,35 @@ export class AclService {
     return this.db.collection<PermissionDoc>('permissions', { readConcern: { level } });
   }
 
-  /** Returns the caller's access, or null when the repository is missing or not readable. */
-  async resolve(p: Principal, repoId: string, { final = false } = {}): Promise<RepoAccess | null> {
-    const level = final ? 'linearizable' : 'majority';
+  /**
+   * Final re-check for several repositories at once. One linearizable "fence" read proves this
+   * node is primary and that every write acknowledged before it (e.g. a revocation committed with
+   * w:majority) is visible; the per-repository reads then run as majority reads in the same
+   * causally consistent session, so they observe at least the fence's state.
+   */
+  async finalCheck(p: Principal, repoIds: string[]): Promise<Map<string, RepoAccess | null>> {
+    const out = new Map<string, RepoAccess | null>();
+    if (!repoIds.length) return out;
+    const session = this.client.startSession({ causalConsistency: true });
     try {
-      const repo = await this.repos(level).findOne(
+      await this.repos('linearizable').findOne({ repo_id: repoIds[0] }, { session, projection: { _id: 1 }, maxTimeMS: this.opts.timeoutMs });
+      for (const repoId of repoIds) out.set(repoId, await this.resolve(p, repoId, { final: true, session }));
+      return out;
+    } catch (e) {
+      if (e instanceof AclUnavailableError) throw e;
+      throw new AclUnavailableError();
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  /** Returns the caller's access, or null when the repository is missing or not readable. */
+  async resolve(p: Principal, repoId: string, { final = false, session }: { final?: boolean; session?: ClientSession } = {}): Promise<RepoAccess | null> {
+    if (final && !session) return (await this.finalCheck(p, [repoId])).get(repoId) ?? null;
+    try {
+      const repo = await this.repos('majority').findOne(
         { repo_id: repoId },
-        { projection: { _id: 0, repo_id: 1, visibility: 1, acl_epoch: 1 }, maxTimeMS: this.opts.timeoutMs },
+        { session, projection: { _id: 0, repo_id: 1, visibility: 1, acl_epoch: 1 }, maxTimeMS: this.opts.timeoutMs },
       );
       if (!repo) return null;
 
@@ -70,9 +92,9 @@ export class AclService {
       if (!final && cached && cached.aclEpoch === repo.acl_epoch && Date.now() - cached.at < this.opts.cacheTtlMs) {
         role = cached.role;
       } else {
-        const perm = await this.perms(level).findOne(
+        const perm = await this.perms('majority').findOne(
           { repo_id: repoId, principal_id: p.userId },
-          { projection: { _id: 0, role: 1 }, maxTimeMS: this.opts.timeoutMs },
+          { session, projection: { _id: 0, role: 1 }, maxTimeMS: this.opts.timeoutMs },
         );
         role = perm?.role ?? null;
         this.cache.set(key, { role, aclEpoch: repo.acl_epoch, at: Date.now() });

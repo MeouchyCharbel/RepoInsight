@@ -16,7 +16,9 @@
     "search:rebuild": "tsx src/search/rebuild-cli.ts",
     "activity:recompute": "tsx src/stream/recompute-cli.ts",
     "eval": "tsx src/eval/run.ts",
-    "bench": "tsx src/eval/bench.ts"
+    "bench": "tsx src/eval/bench.ts",
+    "seed:scale": "tsx src/seed/scale.ts",
+    "bench:drain": "tsx src/eval/drain.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

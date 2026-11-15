@@ -30,6 +30,8 @@
     "eval": "npm -w backend run eval",
     "bench": "npm -w backend run bench --",
     "dev:web": "npm -w frontend run dev",
-    "build:web": "npm -w frontend run build"
+    "build:web": "npm -w frontend run build",
+    "seed:scale": "npm -w backend run seed:scale --",
+    "bench:drain": "npm -w backend run bench:drain"
   }
 }

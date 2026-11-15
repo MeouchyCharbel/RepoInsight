@@ -23,7 +23,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 | 4 Release tracing | done (2026-11-15) |
 | 5 Search, citations, guidance, eval | done (2026-11-15) |
 | 6 Frontend | done (2026-11-15) |
-| 7 Docs, benchmarks, demo | pending |
+| 7 Docs, benchmarks, demo | done (2026-11-15) |
 
 ## Phase 0 verification (manual checks, 2026-11-15)
 Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
@@ -161,7 +161,21 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
   ask flow with citation verification, document viewer at 375 px width. Console: only the expected
   401 from the pre-login session check. Backend tests: 104 passing; frontend type-check and build OK.
 
-## Known limitations so far
+## Phase 7 summary (2026-11-15)
+- Scale data generator (`npm run seed:scale`): 100 repositories, 1,800 issues, 5,400 comments,
+  800 document revisions, 16,400 chunks, 11,600 events, all through the normal store and outbox.
+- Measurements (docs/RESULTS.md, raw files in docs/results/): Recall@10 1.0, MRR 0.822, citations
+  83/83, 0 unauthorized results, 0 stale security answers; search p50 103 ms / p95 111 ms; answer
+  p50 340 ms; write-to-searchable p50 1.0 s; backlog drain: relay 2,780 ev/s, activity 60 ev/s,
+  search 47 ev/s, graph 23 ev/s (after fix).
+- Fixes found by measurement: graph projector re-classified the whole repository per event
+  (~3 ev/s) -> incremental per thread; final ACL re-check used two linearizable reads per
+  repository and per citation -> one linearizable fence per request + causally consistent majority
+  reads (search p50 208 -> 103 ms, answer 2,018 -> 340 ms). Tests: 105 passing.
+- Docs: README rewrite, docs/API.md, DEMO.md, RESULTS.md, PROTOTYPE-SCOPE.md, CHECKLIST.md,
+  REPORT-ADDENDUM.md (draft for the author).
+
+## Known limitations
 - No automated frontend tests (flows were checked manually in the browser).
 - No Content-Security-Policy header in the Vite dev server (would be set by the production web server).
 - No PR detail page or import UI (imports use the CLI or API).
