@@ -25,6 +25,8 @@
     "search:setup": "npm -w backend run search:setup",
     "worker": "npm -w backend run worker",
     "search:rebuild": "npm -w backend run search:rebuild",
-    "activity:recompute": "npm -w backend run activity:recompute --"
+    "activity:recompute": "npm -w backend run activity:recompute --",
+    "eval": "npm -w backend run eval",
+    "bench": "npm -w backend run bench --"
   }
 }

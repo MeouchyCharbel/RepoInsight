@@ -4,7 +4,7 @@ Prototype of the *Repository, Issue and Documentation Assistant* described in th
 architecture report. MongoDB is the authoritative store; OpenSearch and other views are derived
 from it through a transactional outbox and Kafka.
 
-> Status: **Phase 4 (issue -> PR -> commit -> release tracing)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
+> Status: **Phase 5 (search, citations, current-vs-historical guidance, evaluation)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
 > what is tested, and what remains production-design only.
 
 ## Stack
@@ -90,6 +90,8 @@ Running it again performs an incremental update.
 | `npm run worker` | Outbox relay -> Kafka -> search and activity projectors |
 | `npm run search:rebuild` | Rebuild OpenSearch from MongoDB into a new index and swap the alias |
 | `npm run activity:recompute [-- --all]` | Repair dashboard counters from canonical data |
+| `npm run eval` | Retrieval evaluation (Recall@10, MRR, citation validity, leak probes, stale-advice rate) |
+| `npm run bench -- --iterations 200 --index-samples 20` | Latency and indexing-delay benchmark (worker must run) |
 | `npm run infra:status` | Container state and health |
 | `npm run infra:logs` | Recent logs |
 | `npm run infra:down` | Stop containers, **keep** data |
@@ -120,6 +122,20 @@ anything weaker is reported as unverified.
 | `POST /repos/:repoId/permissions` `{username, role}` | Grant access |
 | `DELETE /repos/:repoId/permissions/:username` | Revoke access (effective before the response) |
 | `PATCH /repos/:repoId/visibility` `{visibility}` | Public or private |
+
+Search, citations and guidance:
+
+| Method and path | Purpose |
+|---|---|
+| `GET /search?q=&repo=&label=&release=&type=&status=all\|current&limit=` | Ranked, cited chunks; each marked current / superseded / historical / possibly_outdated / unknown |
+| `POST /citations/verify` `{repo_id, chunk_id}` | Re-derives the cited lines from the stored source revision and checks the digest |
+| `GET /repos/:repoId/guidance/compare?topic=&from=&to=` | Current vs historical guidance for a config key, with the PRs/notes explaining the change |
+| `POST /answer` `{repo_id, query, release?}` | Extractive answer: verified current evidence first, superseded evidence separated, warnings |
+| `GET /analytics/queries?days=` | Query-log aggregates (platform admins) |
+
+Search pre-filters by public visibility or MongoDB membership, then re-checks every hit against
+MongoDB (access, canonical chunk, digest) and re-checks access before responding. Snippets come
+from MongoDB, not the index, and no hit totals are returned.
 
 Platform admins only:
 

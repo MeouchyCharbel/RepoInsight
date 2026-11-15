@@ -139,7 +139,8 @@ export type Relation =
   | 'PR_MERGED_AS_COMMIT'
   | 'PR_CONTAINS_COMMIT'
   | 'RELEASE_CONTAINS_COMMIT'
-  | 'COMMIT_BACKPORT_OF';
+  | 'COMMIT_BACKPORT_OF'
+  | 'GUIDANCE_SUPERSEDES';
 
 /** Typed, versioned adjacency record (report 5.1). */
 export interface EdgeDoc {
@@ -187,6 +188,17 @@ export interface ChunkDoc {
   release_ids: string[]; // filled by release tracing (Phase 4)
   commit_sha: string | null;
   created_at: Date;
+  // Guidance classification (report 9.2); detection only ever downgrades.
+  superseded_by?: Supersession | null;
+  possibly_outdated?: boolean;
+  in_effective_release?: boolean; // part of the effective release's docs or its release notes
+}
+
+export interface Supersession {
+  kind: 'revision' | 'release';
+  ref: string; // e.g. "docs/tls.md@rev3" or "v2.4.1"
+  reason: 'newer_revision' | 'security_epoch' | 'config_key_match';
+  confidence: 'verified' | 'candidate';
 }
 
 export interface OutboxDoc {

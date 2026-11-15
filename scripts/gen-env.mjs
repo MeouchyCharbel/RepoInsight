@@ -18,6 +18,7 @@ const secrets = {
   OPENSEARCH_APP_PASSWORD: `Ri-${rnd(18)}7b!`,
   KAFKA_APP_PASSWORD: rnd(),
   DEMO_USER_PASSWORD: rnd(18),
+  QUERY_LOG_SALT: rnd(32),
 };
 
 let env = readFileSync(new URL('../.env.example', import.meta.url), 'utf8');

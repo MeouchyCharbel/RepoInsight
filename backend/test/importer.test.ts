@@ -106,8 +106,9 @@ describe('repository import (mocked GitHub API + real Git history)', () => {
     const repoId = job.repo_id!;
     expect(await ctx.db.collection('repositories').countDocuments({ provider_id: 9001 })).toBe(1);
     expect(await ctx.db.collection('issues').findOne({ repo_id: repoId, number: 81 })).toMatchObject({ body: 'Edited later', revision: 2 });
-    // Only the edited issue produced a new event.
-    expect((await ctx.db.collection('outbox').countDocuments()) - before).toBe(1);
+    // Only the edited issue produced a new canonical event (plus the derived guidance re-classification).
+    const fresh = await ctx.db.collection('outbox').find({}).sort({ created_at: 1 }).skip(before).toArray();
+    expect(fresh.map((e) => e.type).sort()).toEqual(['guidance.updated', 'issue.updated']);
   });
 
   it('records a failed step and still completes independent steps', async () => {

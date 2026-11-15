@@ -20,7 +20,7 @@ export interface Ctx {
 }
 
 /** Fresh test database (collections dropped), indexes, synthetic seed and an app instance. */
-export async function setup(overrides: { rateLimit?: { global: number; login: number }; acl?: (db: Db, c: MongoClient) => AclService } = {}): Promise<Ctx> {
+export async function setup(overrides: { rateLimit?: { global: number; login: number }; acl?: (db: Db, c: MongoClient) => AclService; searchAlias?: string } = {}): Promise<Ctx> {
   const client = await connectMongo(config.MONGO_URL);
   const db = client.db(TEST_DB);
   for (const c of await db.collections()) await c.drop();
@@ -31,6 +31,8 @@ export async function setup(overrides: { rateLimit?: { global: number; login: nu
     client,
     rateLimit: overrides.rateLimit ?? { global: 10_000, login: 10_000 },
     acl: overrides.acl?.(db, client),
+    search: overrides.searchAlias ? { client: testSearch(), alias: overrides.searchAlias } : undefined,
+    queryLog: { salt: config.QUERY_LOG_SALT, rawText: false },
   });
   return { client, db, app };
 }

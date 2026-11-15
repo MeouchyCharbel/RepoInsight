@@ -1,0 +1,28 @@
+{
+  "description": "Hand-labelled retrieval judgments for the synthetic acme/tls-proxy scenario (npm run seed). Relevance is judged per source_id, optionally narrowed to a section anchor. Probe queries check that private content never reaches non-members.",
+  "dataset": "synthetic scenario only; see README for the generator",
+  "queries": [
+    { "id": "q01", "user": "carol", "repo": "acme-tls-proxy", "q": "What is the default tls.min_version?", "relevant": [{ "source_id": "docs/tls.md", "anchor": "secure-defaults" }, { "source_id": "release/v2.4.1", "anchor": "security" }] },
+    { "id": "q02", "user": "carol", "repo": "acme-tls-proxy", "q": "TLS setting regression", "relevant": [{ "source_id": "issue:81" }] },
+    { "id": "q03", "user": "carol", "repo": "acme-tls-proxy", "q": "supported cipher suites", "relevant": [{ "source_id": "docs/ciphers.md" }, { "source_id": "docs/tls.md", "anchor": "cipher-suites" }] },
+    { "id": "q04", "user": "carol", "repo": "acme-tls-proxy", "q": "OCSP stapling", "relevant": [{ "source_id": "docs/ocsp.md" }, { "source_id": "release/v2.4.1", "anchor": "features" }] },
+    { "id": "q05", "user": "carol", "repo": "acme-tls-proxy", "q": "how do I report a vulnerability", "relevant": [{ "source_id": "SECURITY.md" }] },
+    { "id": "q06", "user": "carol", "repo": "acme-tls-proxy", "q": "where are certificates placed", "relevant": [{ "source_id": "docs/tls.md", "anchor": "certificates" }] },
+    { "id": "q07", "user": "carol", "repo": "acme-tls-proxy", "q": "old Android clients fail the handshake", "status": "all", "relevant": [{ "source_id": "issue:12" }] },
+    { "id": "q08", "user": "carol", "repo": "acme-tls-proxy", "q": "why was TLS 1.0 dropped downgrade attacks", "status": "all", "relevant": [{ "source_id": "pr:95" }, { "source_id": "docs/tls.md", "anchor": "secure-defaults" }] },
+    { "id": "q09", "user": "carol", "repo": "acme-tls-proxy", "q": "backport of the TLS default to 2.3", "relevant": [{ "source_id": "release/v2.3.5" }] },
+    { "id": "q10", "user": "carol", "repo": "acme-tls-proxy", "q": "explain how to restrict cipher suites", "relevant": [{ "source_id": "issue:90" }] },
+    { "id": "q11", "user": "carol", "repo": "acme-tls-proxy", "q": "HTTP/3 listener", "relevant": [{ "source_id": "pr:97" }] },
+    { "id": "q12", "user": "bob", "q": "payments gateway mutual TLS", "relevant": [{ "source_id": "docs/payments.md" }] }
+  ],
+  "leak_probes": [
+    { "id": "p01", "user": "carol", "q": "payments gateway mutual TLS" },
+    { "id": "p02", "user": "carol", "q": "rotate payment gateway credentials" },
+    { "id": "p03", "user": "carol", "q": "invoice rounding bug" }
+  ],
+  "security_answers": [
+    { "id": "s01", "user": "carol", "repo": "acme-tls-proxy", "q": "What should tls.min_version be set to?" },
+    { "id": "s02", "user": "carol", "repo": "acme-tls-proxy", "q": "Can I allow TLS 1.0 for legacy clients?" },
+    { "id": "s03", "user": "bob", "repo": "acme-billing", "q": "Which TLS version does the payments gateway require?" }
+  ]
+}

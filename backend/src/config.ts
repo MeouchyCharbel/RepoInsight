@@ -19,6 +19,8 @@ const schema = z.object({
   KAFKA_BROKERS: z.string().default('127.0.0.1:9092'),
   KAFKA_APP_USER: z.string().default('ri_app'),
   KAFKA_APP_PASSWORD: z.string().min(8),
+  QUERY_LOG_SALT: z.string().min(16),
+  QUERY_LOG_RAW_TEXT: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   // Local Git clones and fixture repositories (git-ignored).
   DATA_DIR: z.string().default(fileURLToPath(new URL('../../data', import.meta.url))),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

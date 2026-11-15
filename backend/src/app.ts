@@ -14,6 +14,13 @@ import { ingestRoutes } from './ingest/routes.js';
 import { IngestStore } from './ingest/store.js';
 import { repoRoutes } from './repos/routes.js';
 import { TraceBuilder } from './trace/builder.js';
+import type { Client } from '@opensearch-project/opensearch';
+import { randomBytes } from 'node:crypto';
+import { ReleaseUnavailableError } from './guidance/release.js';
+import { QueryLog } from './search/querylog.js';
+import { searchRoutes } from './search/routes.js';
+import { SearchService } from './search/service.js';
+import { TransientError } from './stream/consumer.js';
 import { traceRoutes } from './trace/routes.js';
 import type { Principal } from './types.js';
 
@@ -36,6 +43,8 @@ export interface AppOptions {
   acl?: AclService;
   github?: GitHubClient;
   dataDir?: string;
+  search?: { client: Client; alias: string };
+  queryLog?: { salt: string; rawText: boolean };
 }
 
 const GENERIC: Record<number, [string, string]> = {
@@ -83,6 +92,13 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     if (err instanceof HttpError) {
       return reply.code(err.status).send({ error: { code: err.code, message: err.message } });
     }
+    if (err instanceof TransientError) {
+      req.log.warn({ reqId: req.id }, 'search backend unavailable');
+      return reply.code(503).send({ error: { code: 'search_unavailable', message: 'Full-text search is temporarily unavailable. Repository and issue pages still work.' } });
+    }
+    if (err instanceof ReleaseUnavailableError) {
+      return reply.code(503).send({ error: { code: 'release_unavailable', message: 'The current release cannot be verified right now.' } });
+    }
     if (err instanceof AclUnavailableError) {
       req.log.warn({ reqId: req.id }, 'access check unavailable - request denied');
       return reply
@@ -113,5 +129,10 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   });
   await app.register(ingestRoutes, { importer, inbox: new Inbox(opts.db, store, app.acl) });
   await app.register(traceRoutes, { builder: new TraceBuilder(opts.db) });
+
+  // Without a salt (tests/dev), pseudonyms use a per-process random key.
+  const log = new QueryLog(opts.db, opts.queryLog ?? { salt: randomBytes(32).toString('hex'), rawText: false });
+  const service = new SearchService(opts.db, opts.search?.client ?? null, opts.search?.alias ?? 'ri-chunks', app.acl, log);
+  await app.register(searchRoutes, { service, log });
   return app;
 }

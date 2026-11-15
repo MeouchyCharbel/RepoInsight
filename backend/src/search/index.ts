@@ -9,7 +9,20 @@ import type { ChunkDoc, IssueDoc, PullRequestDoc, RepositoryDoc } from '../types
  * Writes go through an alias so a rebuilt index can be swapped in atomically.
  */
 export const CHUNKS_MAPPING = {
-  settings: { number_of_shards: 1, number_of_replicas: 0, refresh_interval: '1s' },
+  settings: {
+    number_of_shards: 1,
+    number_of_replicas: 0,
+    refresh_interval: '1s',
+    analysis: {
+      // Identifiers such as tls.min_version or --insecure-skip-verify are indexed whole and as parts.
+      filter: {
+        ri_parts: { type: 'word_delimiter', preserve_original: true, split_on_case_change: false },
+        ri_stop: { type: 'stop', stopwords: '_english_' },
+        ri_stem: { type: 'stemmer', language: 'english' },
+      },
+      analyzer: { ri_text: { type: 'custom', tokenizer: 'whitespace', filter: ['ri_parts', 'lowercase', 'ri_stop', 'ri_stem'] } },
+    },
+  },
   mappings: {
     dynamic: 'strict' as const,
     properties: {
@@ -22,12 +35,12 @@ export const CHUNKS_MAPPING = {
       source_id: { type: 'keyword' },
       revision: { type: 'integer' },
       section_anchor: { type: 'keyword' },
-      heading_path: { type: 'text', analyzer: 'english' },
+      heading_path: { type: 'text', analyzer: 'ri_text' },
       line_start: { type: 'integer' },
       line_end: { type: 'integer' },
-      text: { type: 'text', analyzer: 'english' },
+      text: { type: 'text', analyzer: 'ri_text' },
       text_digest: { type: 'keyword' },
-      thread_title: { type: 'text', analyzer: 'english' },
+      thread_title: { type: 'text', analyzer: 'ri_text' },
       thread_state: { type: 'keyword' },
       labels: { type: 'keyword' },
       config_keys: { type: 'keyword' },
@@ -35,6 +48,11 @@ export const CHUNKS_MAPPING = {
       is_latest: { type: 'boolean' },
       guidance_status: { type: 'keyword' },
       superseded_by_revision: { type: 'integer' },
+      superseded_ref: { type: 'keyword' },
+      superseded_reason: { type: 'keyword' },
+      superseded_confidence: { type: 'keyword' },
+      possibly_outdated: { type: 'boolean' },
+      in_effective_release: { type: 'boolean' },
       commit_sha: { type: 'keyword' },
       created_at: { type: 'date' },
       projected_at: { type: 'date' },
@@ -71,6 +89,11 @@ export function toSearchDoc(c: ChunkDoc, repo: Pick<RepositoryDoc, 'visibility' 
     is_latest: c.is_latest,
     guidance_status: c.guidance_status,
     superseded_by_revision: c.superseded_by_revision,
+    superseded_ref: c.superseded_by?.ref ?? null,
+    superseded_reason: c.superseded_by?.reason ?? null,
+    superseded_confidence: c.superseded_by?.confidence ?? null,
+    possibly_outdated: c.possibly_outdated ?? false,
+    in_effective_release: c.in_effective_release ?? false,
     commit_sha: c.commit_sha,
     created_at: c.created_at,
     projected_at: new Date(),
@@ -96,7 +119,16 @@ export class ChunkIndex {
 
   async ensure(): Promise<void> {
     const exists = (await this.os.indices.existsAlias({ index: `${this.alias}-*`, name: this.alias })).body;
-    if (exists) return;
+    if (exists) {
+      // Additive mapping changes are applied in place; incompatible ones (e.g. a new analyzer)
+      // trigger a rebuild from MongoDB into a new index with an alias swap.
+      try {
+        await this.os.indices.putMapping({ index: this.alias, body: { properties: CHUNKS_MAPPING.mappings.properties } as never });
+      } catch {
+        await this.rebuild();
+      }
+      return;
+    }
     await this.os.indices.create({ index: `${this.alias}-v1`, body: { ...CHUNKS_MAPPING, aliases: { [this.alias]: {} } } as never });
   }
 

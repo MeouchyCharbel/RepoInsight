@@ -3,6 +3,7 @@ import type { Db, Filter } from 'mongodb';
 import { GitRepo } from '../ingest/git.js';
 import type { StreamEvent } from '../stream/kafka.js';
 import type { ChunkDoc, CommitDoc, DocumentRevisionDoc, EdgeDoc, IssueDoc, OutboxDoc, PullRequestDoc, Relation, ReleaseDoc, RepositoryDoc } from '../types.js';
+import { GuidanceService } from '../guidance/classify.js';
 import { type Ancestry, type Budget, CommitGraph } from './graph.js';
 
 interface BranchDoc {
@@ -366,6 +367,7 @@ export class TraceBuilder {
     await this.detectBackports(repoId);
     for (const r of await this.db.collection<ReleaseDoc>('releases').find({ repo_id: repoId }).sort({ published_at: 1 }).toArray()) await this.computeRelease(repoId, r.release_id);
     await this.updateLinkedIssues(repoId);
+    await new GuidanceService(this.db).reclassify(repoId);
   }
 
   private async updateLinkedIssues(repoId: string) {
@@ -384,16 +386,28 @@ export class TraceBuilder {
         await this.buildPrEdges(repo, Number(p.number));
         await this.detectBackports(repo);
         for (const n of (p.closes_issues as number[] | undefined) ?? []) await this.updateIssueFix(repo, n);
+        await new GuidanceService(this.db).reclassify(repo);
         return 'pr-edges';
       case 'issue.opened':
         await this.resolvePending(repo, `issue:${p.number}`);
         await this.updateIssueFix(repo, Number(p.number));
+        await new GuidanceService(this.db).reclassify(repo);
         return 'pending-resolved';
       case 'release.published':
       case 'release.updated':
         await this.computeRelease(repo, String(p.release_id));
         await this.updateLinkedIssues(repo);
+        await new GuidanceService(this.db).reclassify(repo);
         return 'release-computed';
+      case 'document.changed':
+      case 'issue.updated':
+      case 'issue.closed':
+      case 'issue.reopened':
+      case 'comment.added':
+      case 'comment.edited':
+        // New evidence may be superseded (or supersede older evidence).
+        await new GuidanceService(this.db).reclassify(repo);
+        return 'guidance-reclassified';
       case 'commits.ingested':
         // New history can complete pending edges, backports and release ranges (tags may have moved).
         for (const e of await this.edges().find({ repo_id: repo, status: 'pending', to: /^commit:/ }).toArray()) await this.resolvePendingCommit(repo, e.to);

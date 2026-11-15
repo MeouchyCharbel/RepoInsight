@@ -21,7 +21,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 | 2 Ingestion | done (2026-11-15) |
 | 3 Streaming / projections | done (2026-11-15) |
 | 4 Release tracing | done (2026-11-15) |
-| 5 Search, citations, guidance, eval | pending |
+| 5 Search, citations, guidance, eval | done (2026-11-15) |
 | 6 Frontend | pending |
 | 7 Docs, benchmarks, demo | pending |
 
@@ -119,7 +119,37 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
   unverified backports, ranges, issue #81 evidence per release, no claim without a closing link,
   doc release tags, pending edges, tag move, API + access control.
 
+## Phase 5 summary (2026-11-15)
+- Effective release resolver (requested > newest stable on default branch by ancestry > latest
+  stable); security_epoch = security releases contained in it. Effective flag stored on releases.
+- Guidance classification (recomputed, only downgrades): newer revision supersedes older (verified);
+  security-epoch rule marks evidence mentioning a key changed by a later security release
+  historical; config-key match flags older discussion "possibly outdated" (candidate);
+  GUIDANCE_SUPERSEDES edges; `in_effective_release` marker; re-projected via `guidance.updated`.
+- Search: pre-filter (public OR MongoDB membership), post-verify each hit (access, canonical chunk,
+  digest, status), linearizable re-check per repository, canonical snippets, no totals. Identifier-
+  aware analyzer (`tls.min_version` indexed whole and in parts). Default status=all with markers.
+- Citation verification against immutable revisions; guidance compare; extractive answer (no LLM)
+  with release-authority and ACL re-checks; withholds security configuration when no release can
+  be verified.
+- Query logs: HMAC-pseudonymised user, query hash only (raw text off by default), ACL epochs,
+  effective release, index alias + watermark, per-stage latency, drops, citation outcome; 30-day TTL;
+  admin aggregates.
+- Tests: 101 passing (`npm test`, 2026-11-15); 14 new search/guidance tests including stale
+  projection after visibility change, immediate revocation, tampered digest, forged citation text.
+- Evaluation smoke run (2026-11-15, 12 hand-labelled queries on the synthetic scenario):
+  Recall@10 1.0, citations 78/78 valid, 0 unauthorized results in 3 leak probes, stale-security-
+  advice rate 0 (3 answers). q02 (bug report #81) ranks 9th because the conservative security-epoch
+  rule marks it historical and current guidance is boosted. Benchmark smoke run (50 searches):
+  p50 52 ms, answer p50 414 ms, indexing delay p50 1.0 s. Final measurements in Phase 7.
+
 ## Known limitations so far
+- Security-epoch rule over-labels: any older evidence mentioning a changed key (including the bug
+  report that asked for the fix) is historical; this demotes it in ranking (report acknowledges this).
+- Answers are extractive excerpts; there is no natural-language synthesis.
+- Answer latency is dominated by per-citation verification with its own ACL re-checks.
+- PR and comment citations can be verified only while the cited revision is the stored one (no
+  comment/PR revision history is kept).
 - Patch-ids are computed only for fix commits and same-file candidates off the default branch,
   and only when the local clone is available; backport PR links require "backport #N" wording.
 - The graph projector rebuilds the whole repository graph on `commits.ingested` (fine at prototype
