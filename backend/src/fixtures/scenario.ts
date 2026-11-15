@@ -7,6 +7,7 @@ import { GitRepo } from '../ingest/git.js';
 import { importDocs, type StepProgress } from '../ingest/importer.js';
 import type { IngestStore } from '../ingest/store.js';
 import { DEMO } from '../seed/demo.js';
+import { TraceBuilder } from '../trace/builder.js';
 
 const run = promisify(execFile);
 
@@ -219,6 +220,9 @@ export async function ingestScenario(db: Db, store: IngestStore, baseDir: string
 
   const p: StepProgress = { status: 'running', processed: 0, applied: 0, duplicate: 0, stale: 0 };
   await importDocs(store, git, repo, 'main', p);
+
+  await db.collection('repositories').updateOne({ repo_id: repo }, { $set: { git_dir: join(m.dir, '.git') } });
+  await new TraceBuilder(db).rebuildRepo(repo);
 
   // Private synthetic repository content (used to prove nothing private leaks).
   const priv = DEMO.privateRepo;

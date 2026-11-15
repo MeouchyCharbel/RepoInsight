@@ -13,6 +13,8 @@ import { Inbox } from './ingest/inbox.js';
 import { ingestRoutes } from './ingest/routes.js';
 import { IngestStore } from './ingest/store.js';
 import { repoRoutes } from './repos/routes.js';
+import { TraceBuilder } from './trace/builder.js';
+import { traceRoutes } from './trace/routes.js';
 import type { Principal } from './types.js';
 
 declare module 'fastify' {
@@ -110,5 +112,6 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     github: opts.github ?? new GitHubClient(),
   });
   await app.register(ingestRoutes, { importer, inbox: new Inbox(opts.db, store, app.acl) });
+  await app.register(traceRoutes, { builder: new TraceBuilder(opts.db) });
   return app;
 }

@@ -130,6 +130,28 @@ export interface CommitDoc {
   changed_paths: string[]; // capped
   changed_paths_truncated: boolean;
   cherry_picked_from: string | null; // from a "(cherry picked from commit <sha>)" trailer
+  patch_id?: string | null; // `git patch-id --stable`, computed on demand for backport matching
+}
+
+export type Relation =
+  | 'ISSUE_FIXED_BY_PR'
+  | 'ISSUE_MENTIONS_PR'
+  | 'PR_MERGED_AS_COMMIT'
+  | 'PR_CONTAINS_COMMIT'
+  | 'RELEASE_CONTAINS_COMMIT'
+  | 'COMMIT_BACKPORT_OF';
+
+/** Typed, versioned adjacency record (report 5.1). */
+export interface EdgeDoc {
+  repo_id: string;
+  from: string; // e.g. issue:81, pr:95, commit:<sha>, release:v2.4.1
+  relation: Relation;
+  to: string;
+  provenance: string;
+  confidence: 'verified' | 'unverified' | 'weak';
+  status: 'active' | 'pending' | 'invalidated'; // pending = target not ingested yet
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface DocumentRevisionDoc {

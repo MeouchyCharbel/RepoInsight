@@ -36,6 +36,10 @@ export class SearchProjector {
       case 'release.updated':
         await this.index.projectSource(repo, `release/${p.release_id}`);
         return 'projected';
+      case 'release.tagged':
+        // Release containment of documentation revisions changed (chunk release_ids).
+        for (const src of (p.source_ids as string[] | undefined) ?? []) await this.index.projectSource(repo, src);
+        return 'projected';
       case 'repo.visibility_changed':
       case 'access.granted':
       case 'access.revoked':

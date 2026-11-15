@@ -4,7 +4,7 @@ Prototype of the *Repository, Issue and Documentation Assistant* described in th
 architecture report. MongoDB is the authoritative store; OpenSearch and other views are derived
 from it through a transactional outbox and Kafka.
 
-> Status: **Phase 3 (Kafka streaming, OpenSearch and dashboard projections)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
+> Status: **Phase 4 (issue -> PR -> commit -> release tracing)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
 > what is tested, and what remains production-design only.
 
 ## Stack
@@ -108,6 +108,14 @@ All routes except `/health` and `/auth/login` require a session cookie.
 | `GET /repos/:repoId/issues?label=&state=&limit=&cursor=` | Issues, newest first, keyset pagination |
 | `GET /repos/:repoId/issues/:number` | Issue detail |
 | `GET /repos/:repoId/activity?label=` | Daily issue activity (derived; includes `as_of` watermark and lag) |
+| `GET /repos/:repoId/issues/:number/trace` | Issue -> PR -> merged commit -> releases, with evidence per release |
+| `GET /repos/:repoId/releases` | Releases with target commit and previous release |
+| `GET /repos/:repoId/releases/:tag/issues` | Fixes first shipped in this release (verified and unverified listed separately) |
+
+Release inclusion is proven by commit-graph ancestry from the PR's merged commit (merge, squash
+and rebase merges all resolve to that commit), never from head commits, dates or tag names.
+Backports count only with a cherry-pick trailer, a backport PR link or an identical patch-id;
+anything weaker is reported as unverified.
 | `GET /repos/:repoId/permissions` | Members (repository admins) |
 | `POST /repos/:repoId/permissions` `{username, role}` | Grant access |
 | `DELETE /repos/:repoId/permissions/:username` | Revoke access (effective before the response) |

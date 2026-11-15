@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { promisify } from 'node:util';
@@ -103,6 +103,24 @@ export class GitRepo {
       const [sha, date] = l.split('\x1f');
       return { sha: sha!, date: new Date(date!) };
     });
+  }
+
+  /**
+   * `git patch-id --stable` of a non-merge commit: a hash of its diff that ignores line numbers,
+   * the mechanism `git cherry` uses to recognise equivalent commits. Null for merges/empty diffs.
+   */
+  async patchId(sha: string): Promise<string | null> {
+    const diff = await this.git(['show', '--format=', '--no-color', '--no-ext-diff', sha]);
+    if (!diff.trim()) return null;
+    const out = await new Promise<string>((resolve, reject) => {
+      const p = spawn('git', ['--git-dir', this.gitDir, 'patch-id', '--stable'], { windowsHide: true });
+      let s = '';
+      p.stdout.on('data', (d) => (s += d));
+      p.on('error', reject);
+      p.on('close', (code) => (code === 0 ? resolve(s) : reject(new Error('git patch-id failed'))));
+      p.stdin.end(diff);
+    });
+    return out.trim().split(' ')[0] || null;
   }
 
   /** File content at a commit, or null when absent (deleted) or larger than 1 MB. */

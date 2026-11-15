@@ -20,7 +20,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 | 1 Core backend, auth, ACL | done (2026-11-15) |
 | 2 Ingestion | done (2026-11-15) |
 | 3 Streaming / projections | done (2026-11-15) |
-| 4 Release tracing | pending |
+| 4 Release tracing | done (2026-11-15) |
 | 5 Search, citations, guidance, eval | pending |
 | 6 Frontend | pending |
 | 7 Docs, benchmarks, demo | pending |
@@ -99,7 +99,33 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
   drained; a live inbox delivery appeared in search and the dashboard; rebuild of 151 docs to
   `ri-chunks-v2` with v1 kept.
 
+## Phase 4 summary (2026-11-15)
+- `trace/graph.ts`: ancestry over MongoDB `commits` with generation-number pruning (immediate "no"
+  when gen(target) <= gen(fix)); `prev..target` ranges by two-colour painting; node/time budgets
+  return "unknown" instead of guessing; missing history also yields "unknown".
+- `trace/builder.ts`: edges ISSUE_FIXED_BY_PR (closing keyword; verified only when merged),
+  ISSUE_MENTIONS_PR (weak, never proof), PR_MERGED_AS_COMMIT, PR_CONTAINS_COMMIT (context only),
+  RELEASE_CONTAINS_COMMIT (materialised per range), COMMIT_BACKPORT_OF (trailer / backport PR link /
+  identical patch-id = verified; same files + "backport" message = unverified candidate).
+  Pending placeholders resolve when the entity arrives; vanished edges are invalidated, not deleted.
+- Merge strategy (merge commit / squash / rebase / fast-forward) shown as "inferred"; inclusion
+  never depends on it. Tag moves recompute the range.
+- Documentation revisions tagged with the releases that contain them (`chunks.release_ids`),
+  published as `release.tagged` so search re-projects them. Issue `fixed_in_release/status` derived.
+- APIs: issue trace, releases, fixes per release. Graph projector in the worker; import has a
+  `graph` step; `npm run seed` builds the graph.
+- Tests: 87 passing (`npm test`, 2026-11-15); 11 tracing tests on the real Git scenario: ancestry
+  (squash head commits and pre-rebase commits excluded), budget, merge strategies, verified vs
+  unverified backports, ranges, issue #81 evidence per release, no claim without a closing link,
+  doc release tags, pending edges, tag move, API + access control.
+
 ## Known limitations so far
+- Patch-ids are computed only for fix commits and same-file candidates off the default branch,
+  and only when the local clone is available; backport PR links require "backport #N" wording.
+- The graph projector rebuilds the whole repository graph on `commits.ingested` (fine at prototype
+  scale; production would update incrementally).
+- `release.tagged` outbox events are written after the chunk update, not in the same transaction;
+  a crash in between is repaired by the next rebuild.
 - KafkaJS 2.2.4 is unmaintained since 2023 (works with Kafka 3.9; prints a harmless
   TimeoutNegativeWarning on Node 24). Production would use a maintained client.
 - Comment documents can briefly show older parent labels if two projections of the same thread

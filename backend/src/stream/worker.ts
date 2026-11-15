@@ -12,6 +12,7 @@ import { createProducer, kafkaClient, TOPICS } from './kafka.js';
 import { ActivityProjector } from './projectors/activity.js';
 import { ACTIVITY_CONSUMER } from './projectors/activity.js';
 import { SearchProjector } from './projectors/search.js';
+import { TraceBuilder } from '../trace/builder.js';
 import { OutboxRelay } from './relay.js';
 
 const config = loadConfig();
@@ -32,16 +33,18 @@ relay.start(300, (e) => console.error('[relay] publish failed; retrying with bac
 
 const search = new SearchProjector(index);
 const activity = new ActivityProjector(db, client);
+const graph = new TraceBuilder(db);
 const consumers = [
   await runConsumer(kafka, db, producer, { groupId: 'ri-search-projector', topics: [TOPICS.changes, TOPICS.permissions], handler: (ev) => search.handle(ev), dlqTopic: TOPICS.dlq }),
   await runConsumer(kafka, db, producer, { groupId: ACTIVITY_CONSUMER, topics: [TOPICS.changes], handler: (ev) => activity.handle(ev), dlqTopic: TOPICS.dlq }),
+  await runConsumer(kafka, db, producer, { groupId: 'ri-graph-projector', topics: [TOPICS.changes], handler: (ev) => graph.handle(ev), dlqTopic: TOPICS.dlq }),
 ];
 
 // Deliveries recorded but never applied (crash between record and apply).
 const inbox = new Inbox(db, new IngestStore(db, client), new AclService(db, client));
 const repair = setInterval(() => inbox.reprocessPending().catch((e) => console.error('[inbox]', (e as Error).message)), 30_000);
 
-console.log('Worker running: outbox relay, search projector, activity projector.');
+console.log('Worker running: outbox relay, search, activity and graph projectors.');
 const shutdown = async () => {
   clearInterval(repair);
   relay.stop();

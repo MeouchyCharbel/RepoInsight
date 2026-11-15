@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import type { Db } from 'mongodb';
+import { TraceBuilder } from '../trace/builder.js';
 import type { PullRequestDoc } from '../types.js';
 import { GitRepo } from './git.js';
 import { GitHubClient, GitHubError, NAME_RE, RateLimitError } from './github.js';
@@ -29,7 +30,7 @@ export interface ImportJob {
   error: string | null;
 }
 
-const STEPS = ['repository', 'git', 'branches', 'commits', 'releases', 'issues', 'pulls', 'comments', 'review_comments', 'docs'] as const;
+const STEPS = ['repository', 'git', 'branches', 'commits', 'releases', 'issues', 'pulls', 'comments', 'review_comments', 'docs', 'graph'] as const;
 type Step = (typeof STEPS)[number];
 const DEPENDENCIES: Partial<Record<Step, Step[]>> = {
   git: ['repository'],
@@ -41,6 +42,7 @@ const DEPENDENCIES: Partial<Record<Step, Step[]>> = {
   comments: ['pulls'],
   review_comments: ['pulls'],
   docs: ['git'],
+  graph: ['commits', 'releases', 'pulls'],
 };
 const SKEW_MS = 5 * 60 * 1000; // overlap window for "since" to tolerate clock skew
 const CLOSING = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)\b/gi;
@@ -131,6 +133,8 @@ export class Importer {
       git: async () => {
         const url = this.opts.cloneUrl?.(owner, name) ?? `https://github.com/${owner}/${name}.git`;
         ctx.git = await GitRepo.cloneOrFetch(url, join(this.opts.dataDir, 'git', `${ctx.repoId}.git`));
+        // Local clone path is used by the graph builder for patch-ids (never exposed by the API).
+        await this.db.collection('repositories').updateOne({ repo_id: ctx.repoId }, { $set: { git_dir: ctx.git.gitDir } });
         ctx.tags = await ctx.git.tags();
       },
       branches: async (p) => {
@@ -241,6 +245,12 @@ export class Importer {
       },
       docs: async (p) => {
         await importDocs(this.store, ctx.git!, ctx.repoId!, ctx.defaultBranch!, p);
+      },
+      graph: async (p) => {
+        // Edges, backports, release ranges and fixed-in fields (also maintained by the worker).
+        await new TraceBuilder(this.db).rebuildRepo(ctx.repoId!);
+        p.processed = await this.db.collection('edges').countDocuments({ repo_id: ctx.repoId!, status: 'active' });
+        p.applied = p.processed;
       },
     };
 
