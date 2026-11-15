@@ -1,0 +1,16 @@
+{
+  "name": "repoinsight",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Project 19 prototype - Repository, Issue and Documentation Assistant",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "env:init": "node scripts/gen-env.mjs",
+    "infra:up": "docker compose up -d --wait",
+    "infra:status": "docker compose ps",
+    "infra:logs": "docker compose logs --tail=100",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v"
+  }
+}

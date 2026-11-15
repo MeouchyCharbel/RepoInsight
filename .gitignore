@@ -1,0 +1,27 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local data (git clones, benchmark output)
+data/
+.cache/
+bench/results/*.local.json
+
+# Logs / OS / editor
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
