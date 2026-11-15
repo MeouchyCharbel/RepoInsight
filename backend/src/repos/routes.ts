@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAuth } from '../auth/routes.js';
 import { HttpError, parse } from '../errors.js';
 import type { IssueDoc, RepositoryDoc } from '../types.js';
+import { ACTIVITY_CONSUMER } from '../stream/projectors/activity.js';
 import { labelSchema, repoIdSchema } from '../validation.js';
 
 const repoParams = z.object({ repoId: repoIdSchema });
@@ -90,6 +91,29 @@ export async function repoRoutes(app: FastifyInstance) {
           ? Buffer.from(JSON.stringify({ u: last.updated_at.toISOString(), n: last.number })).toString('base64url')
           : null;
       return { items: page.map(issueSummary), next_cursor: next };
+    });
+  });
+
+  // Issue-activity dashboard: derived counters that may lag; always reported with a watermark.
+  app.get('/repos/:repoId/activity', async (req) => {
+    const { repoId } = parse(repoParams, req.params);
+    const { label } = parse(z.strictObject({ label: labelSchema.default('*') }), req.query);
+    return acl.withRead(req.principal!, repoId, async () => {
+      const items = await db
+        .collection('issue_activity_daily')
+        .find({ repo_id: repoId, label }, { projection: { _id: 0, day: 1, opened: 1, closed: 1, reopened: 1, comments: 1, dirty: 1 } })
+        .sort({ day: -1 })
+        .limit(90)
+        .toArray();
+      const state = await db.collection('projection_state').findOne({ consumer: ACTIVITY_CONSUMER });
+      const pending = await db.collection('outbox').countDocuments({ published_at: null, topic: 'ri.changes' });
+      return {
+        items,
+        as_of: state?.last_processed_at ?? null,
+        last_event_lag_seconds: state ? Math.max(0, (state.last_processed_at - state.last_event_created_at) / 1000) : null,
+        unpublished_events: pending,
+        note: 'Derived counters; may lag behind canonical data. Not used for access or security decisions.',
+      };
     });
   });
 

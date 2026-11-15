@@ -5,6 +5,8 @@ import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import { connectMongo, ensureIndexes } from '../src/db.js';
 import { seedDemo } from '../src/seed/demo.js';
+import { searchClient } from '../src/search/client.js';
+import type { Client } from '@opensearch-project/opensearch';
 
 export const config = loadConfig();
 export const TEST_DB = `${config.MONGO_DB}_test`;
@@ -45,4 +47,9 @@ export async function login(app: FastifyInstance, username: string, password = P
   const raw = res.headers['set-cookie'];
   const header = Array.isArray(raw) ? raw[0]! : raw!;
   return header.split(';')[0]!;
+}
+
+/** OpenSearch client with the least-privilege application user (indices ri-* only). */
+export function testSearch(): Client {
+  return searchClient({ url: config.OPENSEARCH_URL, username: config.OPENSEARCH_APP_USER, password: config.OPENSEARCH_APP_PASSWORD, dataDir: config.DATA_DIR });
 }

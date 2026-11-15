@@ -19,7 +19,7 @@ Working log for the Project 19 prototype. Branch: `dev/prototype` (no `main` unt
 | 0 Repo + infrastructure | done (2026-11-15) |
 | 1 Core backend, auth, ACL | done (2026-11-15) |
 | 2 Ingestion | done (2026-11-15) |
-| 3 Streaming / projections | pending |
+| 3 Streaming / projections | done (2026-11-15) |
 | 4 Release tracing | pending |
 | 5 Search, citations, guidance, eval | pending |
 | 6 Frontend | pending |
@@ -76,7 +76,36 @@ Docker Desktop 29.7.2 (WSL 2, 8 GB / 12 CPUs available to Docker).
   requests (33 commits, 7 releases, 10 issues, 8 PRs, 45 comments, 8 doc revisions); re-run used 6
   requests and wrote nothing new.
 
+## Phase 3 summary (2026-11-15)
+- OpenSearch least-privilege user `ri_app` (`npm run search:setup`): indices `ri-*` only; verified
+  403 elsewhere and on the security API. TLS chain verified against the dev root CA (hostname check
+  skipped: demo certificate is issued to node-0.example.com).
+- Outbox relay: idempotent producer (acks=all), creation order, marked published only after ack;
+  Kafka outage leaves rows unpublished (attempts counted) and they publish later.
+- Consumers: offsets committed after the projection write (at-least-once); bounded retries; poison
+  and persistent failures to `ri.changes.dlq` with headers; TransientError (OpenSearch/Mongo
+  unavailable) is redelivered, never dead-lettered. Watermarks in `projection_state`.
+- Search projector: re-reads canonical chunks per entity (thread metadata from the current parent);
+  external_gte versions (source revision x 1e6 + parent revision) reject stale writes; access events
+  refresh `visibility`/`acl_epoch` by update-by-query. Membership is never projected.
+- Rebuild: new versioned index, count verification, atomic alias swap, catch-up, old index kept.
+- Activity projector: processed-event marker + counters in one transaction; late (> 48 h) events mark
+  buckets dirty; `recomputeDay` repairs from canonical data. `GET /repos/:id/activity` with watermark.
+- `occurred_at` added to outbox events (events written before this change are skipped by the
+  activity projector; the dev database was repaired with `npm run activity:recompute -- --all`).
+- Tests: 76 passing (`npm test`, 2026-11-15), incl. real Kafka end-to-end and DLQ, OpenSearch
+  projection, stale-write rejection, rebuild, replay idempotency.
+- Manual run (dev data): worker projected all 150 chunks (OpenSearch count = MongoDB count), outbox
+  drained; a live inbox delivery appeared in search and the dashboard; rebuild of 151 docs to
+  `ri-chunks-v2` with v1 kept.
+
 ## Known limitations so far
+- KafkaJS 2.2.4 is unmaintained since 2023 (works with Kafka 3.9; prints a harmless
+  TimeoutNegativeWarning on Node 24). Production would use a maintained client.
+- Comment documents can briefly show older parent labels if two projections of the same thread
+  race with equal versions (single consumer per partition makes this unlikely).
+- Rebuild catch-up re-projects sources with chunks created during the rebuild; visibility changes
+  during a rebuild are covered by the next access event.
 - Comments do not bump the parent issue's revision; doc revisions do not follow renames; rewritten
   history can renumber document revisions.
 - Release edits are detected by content digest only (the REST API has no release updated_at).

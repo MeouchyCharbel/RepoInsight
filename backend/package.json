@@ -10,12 +10,18 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx src/seed/cli.ts",
     "test": "vitest run",
-    "import": "tsx src/ingest/cli.ts"
+    "import": "tsx src/ingest/cli.ts",
+    "search:setup": "tsx src/search/setup.ts",
+    "worker": "tsx src/stream/worker.ts",
+    "search:rebuild": "tsx src/search/rebuild-cli.ts",
+    "activity:recompute": "tsx src/stream/recompute-cli.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/rate-limit": "^10.2.2",
+    "@opensearch-project/opensearch": "^3.10.0",
     "fastify": "^5.2.1",
+    "kafkajs": "^2.2.4",
     "mongodb": "^6.13.0",
     "zod": "^4.6.7"
   },

@@ -77,7 +77,7 @@ export class IngestStore {
   }
 
   /** Change topic keyed by repo_id:entity_type:entity_id, so one entity's events stay ordered. */
-  private async emit(s: ClientSession, repoId: string, entity: string, revision: number | string, type: string, payload: Document) {
+  private async emit(s: ClientSession, repoId: string, entity: string, revision: number | string, type: string, payload: Document, at: Date = new Date()) {
     const key = `${repoId}:${entity}`;
     await this.db.collection<OutboxDoc>('outbox').insertOne(
       {
@@ -85,7 +85,8 @@ export class IngestStore {
         topic: 'ri.changes',
         key,
         type,
-        payload: { ...payload, repo_id: repoId, entity_key: key, revision },
+        // occurred_at: source time of the change (used for activity buckets and lag).
+        payload: { ...payload, repo_id: repoId, entity_key: key, revision, occurred_at: at.toISOString() },
         created_at: new Date(),
         published_at: null,
         attempts: 0,
@@ -265,7 +266,7 @@ export class IngestStore {
           : prev.state === 'closed' && i.state === 'open'
             ? 'issue.reopened'
             : 'issue.updated';
-      await this.emit(s, i.repo_id, `issue:${i.number}`, revision, type, { number: i.number, state: i.state, labels: i.labels });
+      await this.emit(s, i.repo_id, `issue:${i.number}`, revision, type, { number: i.number, state: i.state, labels: i.labels }, i.source_updated_at);
       return result;
     });
   }
@@ -292,7 +293,7 @@ export class IngestStore {
         number: p.number,
         merged_sha: p.merged_sha,
         closes_issues: p.closes_issues,
-      });
+      }, p.source_updated_at);
       return result;
     });
   }
@@ -322,7 +323,7 @@ export class IngestStore {
         thread_key: c.thread_key,
         comment_id: c.comment_id,
         kind: c.kind,
-      });
+      }, prev ? c.source_updated_at : c.created_at);
       return result;
     });
   }
@@ -351,7 +352,7 @@ export class IngestStore {
         release_id: r.release_id,
         target_sha: r.target_sha,
         channel: data.channel,
-      });
+      }, r.published_at);
       return result;
     });
   }
@@ -397,7 +398,7 @@ export class IngestStore {
       guidance: 'current',
       commit_sha: d.commit_sha,
     });
-    await this.emit(s, d.repo_id, `doc:${d.source_id}`, d.revision, 'document.changed', { source_id: d.source_id, revision: d.revision, is_latest: isLatest, kind: d.kind });
+    await this.emit(s, d.repo_id, `doc:${d.source_id}`, d.revision, 'document.changed', { source_id: d.source_id, revision: d.revision, is_latest: isLatest, kind: d.kind }, d.committed_at);
     return isLatest ? 'applied' : 'stale';
   }
 

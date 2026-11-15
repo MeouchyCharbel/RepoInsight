@@ -15,6 +15,7 @@ const secrets = {
   MONGO_REPLICA_KEY: randomBytes(48).toString('base64'),
   // OpenSearch demands mixed character classes
   OPENSEARCH_ADMIN_PASSWORD: `Ri-${rnd(18)}9a!`,
+  OPENSEARCH_APP_PASSWORD: `Ri-${rnd(18)}7b!`,
   KAFKA_APP_PASSWORD: rnd(),
   DEMO_USER_PASSWORD: rnd(18),
 };

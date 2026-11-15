@@ -13,6 +13,12 @@ const schema = z.object({
   COOKIE_SECURE: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   DEMO_USER_PASSWORD: z.string().min(12).optional(),
   GITHUB_TOKEN: z.string().optional().transform((v) => (v ? v : undefined)),
+  OPENSEARCH_URL: z.string().startsWith('https://').default('https://127.0.0.1:9200'),
+  OPENSEARCH_APP_USER: z.string().default('ri_app'),
+  OPENSEARCH_APP_PASSWORD: z.string().min(8),
+  KAFKA_BROKERS: z.string().default('127.0.0.1:9092'),
+  KAFKA_APP_USER: z.string().default('ri_app'),
+  KAFKA_APP_PASSWORD: z.string().min(8),
   // Local Git clones and fixture repositories (git-ignored).
   DATA_DIR: z.string().default(fileURLToPath(new URL('../../data', import.meta.url))),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

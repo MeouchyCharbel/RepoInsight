@@ -21,6 +21,10 @@
     "infra:logs": "docker compose logs --tail=100",
     "infra:down": "docker compose down",
     "infra:reset": "docker compose down -v",
-    "import": "npm -w backend run import --"
+    "import": "npm -w backend run import --",
+    "search:setup": "npm -w backend run search:setup",
+    "worker": "npm -w backend run worker",
+    "search:rebuild": "npm -w backend run search:rebuild",
+    "activity:recompute": "npm -w backend run activity:recompute --"
   }
 }

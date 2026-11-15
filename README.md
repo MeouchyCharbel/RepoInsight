@@ -4,7 +4,7 @@ Prototype of the *Repository, Issue and Documentation Assistant* described in th
 architecture report. MongoDB is the authoritative store; OpenSearch and other views are derived
 from it through a transactional outbox and Kafka.
 
-> Status: **Phase 2 (ingestion, revisions, outbox)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
+> Status: **Phase 3 (Kafka streaming, OpenSearch and dashboard projections)**. See [PROGRESS.md](PROGRESS.md) for what is implemented,
 > what is tested, and what remains production-design only.
 
 ## Stack
@@ -61,6 +61,17 @@ All demo data is synthetic. `npm run seed` builds a real Git repository under
 backport (cherry-pick trailer) and an edited backport, then ingests it with issues, PRs, reviews,
 releases and documentation revisions (the TLS security-regression story from the report).
 
+Create the least-privilege OpenSearch user (once; uses the admin password from `.env` only here)
+and start the background worker (outbox relay, search and activity projectors):
+
+```bash
+npm run search:setup
+```
+
+```bash
+npm run worker
+```
+
 To import a public GitHub repository (optional; add a read-only `GITHUB_TOKEN` to `.env` for more
 than 60 requests per hour):
 
@@ -76,6 +87,9 @@ Running it again performs an incremental update.
 |---|---|
 | `npm test` | Backend tests (needs the infrastructure running; uses the separate `repoinsight_test` database) |
 | `npm run typecheck` | TypeScript check |
+| `npm run worker` | Outbox relay -> Kafka -> search and activity projectors |
+| `npm run search:rebuild` | Rebuild OpenSearch from MongoDB into a new index and swap the alias |
+| `npm run activity:recompute [-- --all]` | Repair dashboard counters from canonical data |
 | `npm run infra:status` | Container state and health |
 | `npm run infra:logs` | Recent logs |
 | `npm run infra:down` | Stop containers, **keep** data |
@@ -93,6 +107,7 @@ All routes except `/health` and `/auth/login` require a session cookie.
 | `GET /repos/:repoId` | Repository detail |
 | `GET /repos/:repoId/issues?label=&state=&limit=&cursor=` | Issues, newest first, keyset pagination |
 | `GET /repos/:repoId/issues/:number` | Issue detail |
+| `GET /repos/:repoId/activity?label=` | Daily issue activity (derived; includes `as_of` watermark and lag) |
 | `GET /repos/:repoId/permissions` | Members (repository admins) |
 | `POST /repos/:repoId/permissions` `{username, role}` | Grant access |
 | `DELETE /repos/:repoId/permissions/:username` | Revoke access (effective before the response) |
@@ -115,6 +130,16 @@ If access cannot be verified, private and public data alike are refused with 503
   user limited to `readWrite` on the application database.
 - OpenSearch runs with its security plugin enabled using bundled development certificates.
 - These settings are for local development only; see PROGRESS.md for known limitations.
+
+## Recovery
+
+| Failure | Effect | Recovery |
+|---|---|---|
+| Kafka down | Canonical writes continue; outbox grows; search/dashboards lag | Relay retries with backoff and publishes the backlog in order |
+| Worker crash mid-batch | Projections lag | Consumers resume from the last committed offset; re-applied events are idempotent |
+| OpenSearch down | Search lags; events are retried, never dead-lettered | Redelivered when it is back; or `npm run search:rebuild` |
+| Poison event | Sent to `ri.changes.dlq` with diagnostics after bounded retries | Inspect, fix, replay |
+| Missed/late events | Dashboard buckets marked dirty | `npm run activity:recompute`; import re-run reconciles canonical data |
 
 ## Troubleshooting
 
